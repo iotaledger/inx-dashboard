@@ -10,6 +10,7 @@ import (
 	"github.com/iotaledger/hive.go/events"
 	"github.com/iotaledger/hive.go/logger"
 	inx "github.com/iotaledger/inx/go"
+	"github.com/iotaledger/iota.go/v3/nodeclient"
 )
 
 type NodeBridge struct {
@@ -74,6 +75,10 @@ func NewNodeBridge(ctx context.Context, client inx.INXClient, log *logger.Logger
 		confirmedMilestone: nodeStatus.GetConfirmedMilestone(),
 		pruningIndex:       nodeStatus.GetTanglePruningIndex(),
 	}, nil
+}
+
+func (n *NodeBridge) INXNodeClient() *nodeclient.Client {
+	return inx.NewNodeclientOverINX(n.client)
 }
 
 func (n *NodeBridge) Run(ctx context.Context) {

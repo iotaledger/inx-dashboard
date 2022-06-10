@@ -295,7 +295,7 @@ func (d *Dashboard) setupRoutes(e *echo.Echo) {
 	// Pass all the dashboard request through to the local rest API
 	e.Group("/api", d.apiMiddlewares()...)
 
-	e.GET("/ws", d.websocketRoute)
+	e.GET("/dashboard/ws", d.websocketRoute)
 
 	// Rate-limit the auth endpoint
 	rateLimiterConfig := middleware.RateLimiterConfig{
@@ -308,5 +308,5 @@ func (d *Dashboard) setupRoutes(e *echo.Echo) {
 		),
 	}
 
-	e.POST("/auth", d.authRoute, middleware.RateLimiterWithConfig(rateLimiterConfig))
+	e.POST("/dashboard/auth", d.authRoute, middleware.RateLimiterWithConfig(rateLimiterConfig))
 }

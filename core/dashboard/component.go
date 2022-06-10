@@ -77,6 +77,7 @@ func provide(c *dig.Container) error {
 		}
 
 		hub := websockethub.NewHub(CoreComponent.Logger(), upgrader, broadcastQueueSize, clientSendChannelSize, maxWebsocketMessageSize)
+		nodeClient := deps.NodeBridge.INXNodeClient()
 
 		CoreComponent.LogInfo("Setting up dashboard...")
 		return dashboard.New(
@@ -88,6 +89,7 @@ func provide(c *dig.Container) error {
 			ParamsDashboard.Auth.SessionTimeout,
 			ParamsDashboard.Auth.IdentityFilePath,
 			ParamsDashboard.Auth.IdentityPrivateKey,
+			nodeClient,
 			hub,
 			getIsNodeAlmostSynced,
 			getPublicNodeStatus,

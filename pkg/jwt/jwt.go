@@ -1,7 +1,7 @@
 package jwt
 
 import (
-	"crypto"
+	"crypto/ed25519"
 	"crypto/subtle"
 	"fmt"
 	"net/http"
@@ -23,10 +23,10 @@ type JWTAuth struct {
 	subject        string
 	sessionTimeout time.Duration
 	identity       string
-	secret         crypto.PrivateKey
+	secret         []byte
 }
 
-func NewJWTAuth(subject string, sessionTimeout time.Duration, identity string, secret crypto.PrivateKey) (*JWTAuth, error) {
+func NewJWTAuth(subject string, sessionTimeout time.Duration, identity string, secret ed25519.PrivateKey) (*JWTAuth, error) {
 
 	if len(subject) == 0 {
 		return nil, errors.New("subject must not be empty")
@@ -36,7 +36,7 @@ func NewJWTAuth(subject string, sessionTimeout time.Duration, identity string, s
 		subject:        subject,
 		sessionTimeout: sessionTimeout,
 		identity:       identity,
-		secret:         secret,
+		secret:         secret[:],
 	}, nil
 }
 

@@ -6,15 +6,17 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/iotaledger/hive.go v0.0.0-20220516114042-6c0ad76bc65f
-	github.com/iotaledger/hornet-dashboard v0.0.0-20220610115100-8e24f2b357df
+	github.com/iotaledger/hornet-dashboard v0.0.0-20220610230735-d1ddb48ba479
 	github.com/iotaledger/inx/go v0.0.0-20220610044628-dd60e5489706
-	github.com/iotaledger/iota.go/v3 v3.0.0-20220530132039-ec319e60cc56
+	github.com/iotaledger/iota.go/v3 v3.0.0-20220610212343-c76800b20276
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.2
 	go.uber.org/dig v1.14.1
-	google.golang.org/grpc v1.46.2
+	google.golang.org/grpc v1.47.0
 )
+
+require golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
 
 require (
 	filippo.io/edwards25519 v1.0.0 // indirect
@@ -23,7 +25,7 @@ require (
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
-	github.com/eclipse/paho.mqtt.golang v1.3.5 // indirect
+	github.com/eclipse/paho.mqtt.golang v1.4.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/ethereum/go-ethereum v1.10.18 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
@@ -34,7 +36,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gorilla/websocket v1.5.0
 	github.com/hashicorp/go-version v1.5.0 // indirect
-	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-20220525131705-7bc68cc983dd // indirect
+	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-20220531132324-8347a155e220 // indirect
 	github.com/iotaledger/iota.go v1.0.0 // indirect
 	github.com/knadh/koanf v1.4.2-0.20220512043835-4112a7258008 // indirect
 	github.com/labstack/gommon v0.3.1 // indirect
@@ -64,11 +66,11 @@ require (
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
 	golang.org/x/net v0.0.0-20220607020251-c690dde0001d // indirect
-	golang.org/x/sys v0.0.0-20220608164250-635b8c9b7f68 // indirect
+	golang.org/x/sys v0.0.0-20220610221304-9f5ed59c137d // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220411224347-583f2d630306
 	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
-	google.golang.org/genproto v0.0.0-20220527130721-00d5c0f3be58 // indirect
+	google.golang.org/genproto v0.0.0-20220608133413-ed9918b62aac // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

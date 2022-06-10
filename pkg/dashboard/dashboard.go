@@ -18,6 +18,7 @@ import (
 	"github.com/iotaledger/hive.go/websockethub"
 	"github.com/iotaledger/inx-dashboard/pkg/daemon"
 	"github.com/iotaledger/inx-dashboard/pkg/jwt"
+	"github.com/iotaledger/iota.go/v3/nodeclient"
 )
 
 type (
@@ -44,6 +45,7 @@ type Dashboard struct {
 	authSessionTimeout time.Duration
 	identityFilePath   string
 	identityPrivateKey string
+	nodeClient         *nodeclient.Client
 	hub                *websockethub.Hub
 	basicAuth          *basicauth.BasicAuth
 	jwtAuth            *jwt.JWTAuth
@@ -71,6 +73,7 @@ func New(
 	authSessionTimeout time.Duration,
 	identityFilePath string,
 	identityPrivateKey string,
+	nodeClient *nodeclient.Client,
 	hub *websockethub.Hub,
 	getIsNodeAlmostSynced getIsNodeAlmostSyncedFunc,
 	getPublicNodeStatus getPublicNodeStatusFunc,
@@ -85,6 +88,7 @@ func New(
 
 	return &Dashboard{
 		WrappedLogger:           logger.NewWrappedLogger(log),
+		daemon:                  daemon,
 		bindAddress:             bindAddress,
 		authUserName:            authUserName,
 		authPasswordHash:        authPasswordHash,
@@ -92,6 +96,7 @@ func New(
 		authSessionTimeout:      authSessionTimeout,
 		identityFilePath:        identityFilePath,
 		identityPrivateKey:      identityPrivateKey,
+		nodeClient:              nodeClient,
 		hub:                     hub,
 		getIsNodeAlmostSynced:   getIsNodeAlmostSynced,
 		getPublicNodeStatus:     getPublicNodeStatus,
@@ -158,6 +163,10 @@ func newEcho() *echo.Echo {
 func (d *Dashboard) Run() {
 	e := newEcho()
 	d.setupRoutes(e)
+	err := d.setupNodeRoutes(e)
+	if err != nil {
+		d.LogPanicf("failed to setup node routes: %w", err)
+	}
 
 	go func() {
 		d.LogInfof("You can now access the dashboard using: http://%s", d.bindAddress)
@@ -166,6 +175,8 @@ func (d *Dashboard) Run() {
 			d.LogWarnf("Stopped dashboard server due to an error (%s)", err)
 		}
 	}()
+
+	d.run()
 }
 
 func (d *Dashboard) run() {
