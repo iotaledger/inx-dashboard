@@ -28,6 +28,10 @@ type ParametersDashboard struct {
 		PasswordHash string `default:"0000000000000000000000000000000000000000000000000000000000000000" usage:"the auth password+salt as a scrypt hash"`
 		// PasswordSalt defines the auth salt used for hashing the password
 		PasswordSalt string `default:"0000000000000000000000000000000000000000000000000000000000000000" usage:"the auth salt used for hashing the password"`
+		// IdentityFilePath defines the path to the identity file used for JWT
+		IdentityFilePath string `default:"identity.key" usage:"the path to the identity file used for JWT"`
+		// Defines the private key used to sign the JWT tokens.
+		IdentityPrivateKey string `default:"" usage:"private key used to sign the JWT tokens (optional)"`
 	}
 }
 

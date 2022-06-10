@@ -5,7 +5,7 @@ import (
 
 	"github.com/iotaledger/hive.go/syncutils"
 	"github.com/iotaledger/hive.go/websockethub"
-	"github.com/iotaledger/hornet/pkg/jwt"
+	"github.com/iotaledger/inx-dashboard/pkg/jwt"
 )
 
 const (
@@ -17,34 +17,30 @@ const (
 	MsgTypeNodeStatus = 2
 	// MsgTypeBPSMetric is the type of the blocks per second (BPS) metric message.
 	MsgTypeBPSMetric = 3
-	// MsgTypeTipSelMetric is the type of the TipSelMetric message.
-	//MsgTypeTipSelMetric = 4
 	// MsgTypeMilestone is the type of the Milestone message.
-	MsgTypeMilestone = 5
+	MsgTypeMilestone = 4
 	// MsgTypePeerMetric is the type of the PeerMetric message.
-	MsgTypePeerMetric = 6
+	MsgTypePeerMetric = 5
 	// MsgTypeConfirmedMsMetrics is the type of the ConfirmedMsMetrics message.
-	MsgTypeConfirmedMsMetrics = 7
+	MsgTypeConfirmedMsMetrics = 6
 	// MsgTypeVertex is the type of the Vertex message for the visualizer.
-	MsgTypeVertex = 8
+	MsgTypeVertex = 7
 	// MsgTypeSolidInfo is the type of the SolidInfo message for the visualizer.
-	MsgTypeSolidInfo = 9
+	MsgTypeSolidInfo = 8
 	// MsgTypeConfirmedInfo is the type of the ConfirmedInfo message for the visualizer.
-	MsgTypeConfirmedInfo = 10
+	MsgTypeConfirmedInfo = 9
 	// MsgTypeMilestoneInfo is the type of the MilestoneInfo message for the visualizer.
-	MsgTypeMilestoneInfo = 11
+	MsgTypeMilestoneInfo = 10
 	// MsgTypeTipInfo is the type of the TipInfo message for the visualizer.
-	MsgTypeTipInfo = 12
+	MsgTypeTipInfo = 11
 	// MsgTypeDatabaseSizeMetric is the type of the database Size message for the metrics.
-	MsgTypeDatabaseSizeMetric = 13
-	// MsgTypeDatabaseCleanupEvent is the type of the database cleanup message for the metrics.
-	MsgTypeDatabaseCleanupEvent = 14
+	MsgTypeDatabaseSizeMetric = 12
 )
 
-func websocketRoute(ctx echo.Context) error {
+func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 	defer func() {
 		if r := recover(); r != nil {
-			Plugin.LogErrorf("recovered from panic within WS handle func: %s", r)
+			d.LogErrorf("recovered from panic within WS handle func: %s", r)
 		}
 	}()
 
@@ -79,27 +75,24 @@ func websocketRoute(ctx echo.Context) error {
 
 		switch topic {
 		case MsgTypeSyncStatus:
-			client.Send(&Msg{Type: MsgTypeSyncStatus, Data: currentSyncStatus()})
+			client.Send(&Msg{Type: MsgTypeSyncStatus, Data: d.getSyncStatus()})
 
 		case MsgTypePublicNodeStatus:
-			client.Send(&Msg{Type: MsgTypePublicNodeStatus, Data: currentPublicNodeStatus()})
+			client.Send(&Msg{Type: MsgTypePublicNodeStatus, Data: d.getPublicNodeStatus()})
 
 		case MsgTypeNodeStatus:
-			client.Send(&Msg{Type: MsgTypeNodeStatus, Data: currentNodeStatus()})
+			client.Send(&Msg{Type: MsgTypeNodeStatus, Data: d.getNodeStatus()})
 
 		case MsgTypeConfirmedMsMetrics:
-			client.Send(&Msg{Type: MsgTypeConfirmedMsMetrics, Data: cachedMilestoneMetrics})
+			client.Send(&Msg{Type: MsgTypeConfirmedMsMetrics, Data: d.cachedMilestoneMetrics})
 
 		case MsgTypeDatabaseSizeMetric:
-			client.Send(&Msg{Type: MsgTypeDatabaseSizeMetric, Data: cachedDBSizeMetrics})
-
-		case MsgTypeDatabaseCleanupEvent:
-			client.Send(&Msg{Type: MsgTypeDatabaseCleanupEvent, Data: lastDBCleanup})
+			client.Send(&Msg{Type: MsgTypeDatabaseSizeMetric, Data: d.cachedDatabaseSizeMetrics})
 
 		case MsgTypeMilestone:
-			start := deps.SyncManager.LatestMilestoneIndex()
+			start := d.getLatestMilestoneIndex()
 			for msIndex := start - 10; msIndex <= start; msIndex++ {
-				if milestoneIDHex, err := getMilestoneIDHex(msIndex); err == nil {
+				if milestoneIDHex, err := d.getMilestoneIDHex(msIndex); err == nil {
 					client.Send(&Msg{Type: MsgTypeMilestone, Data: &LivefeedMilestone{MilestoneID: milestoneIDHex, Index: msIndex}})
 				} else {
 					break
@@ -112,7 +105,7 @@ func websocketRoute(ctx echo.Context) error {
 	registeredTopics := make(map[byte]struct{})
 	initValuesSent := make(map[byte]struct{})
 
-	hub.ServeWebsocket(ctx.Response(), ctx.Request(),
+	d.hub.ServeWebsocket(ctx.Response(), ctx.Request(),
 		// onCreate gets called when the client is created
 		func(client *websockethub.Client) {
 			client.FilterCallback = func(_ *websockethub.Client, data interface{}) bool {
@@ -158,8 +151,8 @@ func websocketRoute(ctx echo.Context) error {
 										continue
 									}
 									token := string(msg.Data[2:])
-									if !jwtAuth.VerifyJWT(token, func(claims *jwt.AuthClaims) bool {
-										return claims.Dashboard
+									if !d.jwtAuth.VerifyJWT(token, func(claims *jwt.AuthClaims) bool {
+										return true
 									}) {
 										// Dot not allow unsecure subscriptions to protected topics
 										continue
@@ -187,7 +180,7 @@ func websocketRoute(ctx echo.Context) error {
 
 		// onConnect gets called when the client was registered
 		func(_ *websockethub.Client) {
-			Plugin.LogInfo("WebSocket client connection established")
+			d.LogInfo("WebSocket client connection established")
 		})
 
 	return nil
