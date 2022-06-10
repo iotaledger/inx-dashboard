@@ -1,0 +1,31 @@
+{
+  "app": {
+    "checkForUpdates": true,
+    "disablePlugins": [],
+    "enablePlugins": [],
+    "stopGracePeriod": "5m"
+  },
+  "inx": {
+    "address": "localhost:9029"
+  },
+  "dashboard": {
+    "bindAddress": "localhost:8081",
+    "alias": "HORNET node",
+    "dev": false,
+    "auth": {
+      "sessionTimeout": "72h",
+      "username": "admin",
+      "passwordHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "passwordSalt": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  },
+  "profiling": {
+    "bindAddress": "localhost:6060"
+  },
+  "prometheus": {
+    "bindAddress": "localhost:9312",
+    "goMetrics": false,
+    "processMetrics": false,
+    "promhttpMetrics": false
+  }
+}
