@@ -3,20 +3,23 @@ module github.com/iotaledger/inx-dashboard
 go 1.18
 
 require (
-	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/iotaledger/hive.go v0.0.0-20220516114042-6c0ad76bc65f
-	github.com/iotaledger/hornet-dashboard v0.0.0-20220610230735-d1ddb48ba479
-	github.com/iotaledger/inx/go v0.0.0-20220610044628-dd60e5489706
+	github.com/iancoleman/orderedmap v0.2.0
+	github.com/iotaledger/hive.go v0.0.0-20220531132324-8347a155e220
+	github.com/iotaledger/hornet-dashboard v0.0.0-20220616135628-0f83af99ef5a
+	github.com/iotaledger/inx-app v0.0.0-20220616153354-1698415db91c
+	github.com/iotaledger/inx/go v0.0.0-20220615123503-f64096762c65
 	github.com/iotaledger/iota.go/v3 v3.0.0-20220610212343-c76800b20276
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.2
 	go.uber.org/dig v1.14.1
-	google.golang.org/grpc v1.47.0
 )
 
-require golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
+require (
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
+	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
+	google.golang.org/grpc v1.47.0 // indirect
+)
 
 require (
 	filippo.io/edwards25519 v1.0.0 // indirect
@@ -27,7 +30,7 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.4.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/ethereum/go-ethereum v1.10.18 // indirect
+	github.com/ethereum/go-ethereum v1.10.19 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible
@@ -49,8 +52,8 @@ require (
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/pasztorpisti/qs v0.0.0-20171216220353-8d6c33ee906c // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
-	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
-	github.com/petermattis/goid v0.0.0-20220512133901-1f93b0c1af58 // indirect
+	github.com/pelletier/go-toml/v2 v2.0.2 // indirect
+	github.com/petermattis/goid v0.0.0-20220526132513-07eaf5d0b9f4 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.34.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
@@ -65,12 +68,13 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
-	golang.org/x/net v0.0.0-20220607020251-c690dde0001d // indirect
-	golang.org/x/sys v0.0.0-20220610221304-9f5ed59c137d // indirect
+	golang.org/x/net v0.0.0-20220615171555-694bf12d69de // indirect
+	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
+	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c // indirect
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/time v0.0.0-20220411224347-583f2d630306
-	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
-	google.golang.org/genproto v0.0.0-20220608133413-ed9918b62aac // indirect
+	golang.org/x/time v0.0.0-20220609170525-579cf78fd858
+	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
+	google.golang.org/genproto v0.0.0-20220616135557-88e70c0c3a90 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

@@ -2,24 +2,26 @@ package dashboard
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v4"
-
-	"github.com/iotaledger/iota.go/v3/nodeclient"
 )
 
 const (
-	APIRoute                 = "/api/v2"
-	PluginIndexerRoute       = "/api/plugins/indexer/v1"
-	PluginParticipationRoute = "/api/plugins/participation/v1"
-	PluginSpammerRoute       = "/api/plugins/spammer/v1"
+	FeatureDashboardMetrics = "dashboard-metrics/v1"
+	FeatureIndexer          = "indexer/v1"
+	FeatureParticipation    = "participation/v1"
+	FeatureSpammer          = "spammer/v1"
+
+	APIRoute                    = "/api/v2"
+	PluginDashboardMetricsRoute = "/api/plugins/" + FeatureDashboardMetrics
+	PluginIndexerRoute          = "/api/plugins/" + FeatureIndexer
+	PluginParticipationRoute    = "/api/plugins/" + FeatureParticipation
+	PluginSpammerRoute          = "/api/plugins/" + FeatureSpammer
 )
 
 const (
@@ -143,6 +145,20 @@ const (
 )
 
 const (
+	// RouteNodeInfoExtended is the route to get additional info about the node.
+	// GET returns the extended info of the node.
+	RouteNodeInfoExtended = PluginDashboardMetricsRoute + "/info"
+
+	// RouteDatabaseSizes is the route to get the size of the databases.
+	// GET returns the sizes of the databases.
+	RouteDatabaseSizes = PluginDashboardMetricsRoute + "/database/sizes"
+
+	// RouteGossipMetrics is the route to get metrics about gossip.
+	// GET returns the gossip metrics.
+	RouteGossipMetrics = PluginDashboardMetricsRoute + "/gossip"
+)
+
+const (
 	// ParameterParticipationEventID is used to identify an event by its ID.
 	ParameterParticipationEventID = "eventID"
 
@@ -181,129 +197,115 @@ const (
 	RouteSpammerStop = PluginSpammerRoute + "/stop"
 )
 
-func (d *Dashboard) setupNodeRoutes(e *echo.Echo) error {
+func (d *Dashboard) setupAPIRoutes(routeGroup *echo.Group) error {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	indexerClient, err := d.nodeClient.Indexer(ctx)
-	if err != nil {
-		if err != nodeclient.ErrIndexerPluginNotAvailable {
-			return err
-		}
-	}
-
-	participationSupported, err := d.nodeClient.NodeSupportsPlugin(ctx, "participation/v1")
-	if err != nil {
-		return err
-	}
-
-	spammerSupported, err := d.nodeClient.NodeSupportsPlugin(ctx, "spammer/v1")
-	if err != nil {
-		return err
-	}
-
-	dashboardRouteGroup := e.Group("dashboard")
-
-	dashboardRouteGroup.GET(RouteInfo, func(c echo.Context) error {
+	routeGroup.GET(RouteInfo, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	dashboardRouteGroup.GET(RouteBlockMetadata, func(c echo.Context) error {
+	routeGroup.GET(RouteBlockMetadata, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	dashboardRouteGroup.GET(RouteBlock, func(c echo.Context) error {
+	routeGroup.GET(RouteBlock, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	dashboardRouteGroup.GET(RouteTransactionsIncludedBlock, func(c echo.Context) error {
+	routeGroup.GET(RouteTransactionsIncludedBlock, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	dashboardRouteGroup.GET(RouteMilestoneByID, func(c echo.Context) error {
+	routeGroup.GET(RouteMilestoneByID, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	dashboardRouteGroup.GET(RouteMilestoneByIndex, func(c echo.Context) error {
+	routeGroup.GET(RouteMilestoneByIndex, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	dashboardRouteGroup.GET(RouteOutput, func(c echo.Context) error {
+	routeGroup.GET(RouteOutput, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	dashboardRouteGroup.DELETE(RoutePeer, func(c echo.Context) error {
+	routeGroup.DELETE(RoutePeer, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	dashboardRouteGroup.POST(RoutePeers, func(c echo.Context) error {
+	routeGroup.POST(RoutePeers, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	if indexerClient != nil {
+	// dashboard metrics
+	routeGroup.GET(RouteNodeInfoExtended, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-		dashboardRouteGroup.GET(RouteOutputsBasic, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
-		dashboardRouteGroup.GET(RouteOutputsAliases, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
-		dashboardRouteGroup.GET(RouteOutputsAliasByID, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
-		dashboardRouteGroup.GET(RouteOutputsNFTs, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
-		dashboardRouteGroup.GET(RouteOutputsNFTByID, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
-		dashboardRouteGroup.GET(RouteOutputsFoundries, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
-		dashboardRouteGroup.GET(RouteOutputsFoundryByID, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
-	}
+	routeGroup.GET(RouteDatabaseSizes, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-	if participationSupported {
-		dashboardRouteGroup.GET(RouteParticipationEvents, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
+	routeGroup.GET(RouteGossipMetrics, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-		dashboardRouteGroup.GET(RouteParticipationEvent, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
+	// indexer
+	routeGroup.GET(RouteOutputsBasic, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+	routeGroup.GET(RouteOutputsAliases, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+	routeGroup.GET(RouteOutputsAliasByID, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+	routeGroup.GET(RouteOutputsNFTs, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+	routeGroup.GET(RouteOutputsNFTByID, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+	routeGroup.GET(RouteOutputsFoundries, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+	routeGroup.GET(RouteOutputsFoundryByID, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-		dashboardRouteGroup.GET(RouteParticipationEventStatus, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
+	// participation
+	routeGroup.GET(RouteParticipationEvents, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-		dashboardRouteGroup.POST(RouteAdminCreateEvent, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
+	routeGroup.GET(RouteParticipationEvent, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-		dashboardRouteGroup.DELETE(RouteAdminDeleteEvent, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
-	}
+	routeGroup.GET(RouteParticipationEventStatus, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-	if spammerSupported {
-		dashboardRouteGroup.GET(RouteSpammerStatus, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
+	routeGroup.POST(RouteAdminCreateEvent, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-		dashboardRouteGroup.POST(RouteSpammerStart, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
+	routeGroup.DELETE(RouteAdminDeleteEvent, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-		dashboardRouteGroup.POST(RouteSpammerStop, func(c echo.Context) error {
-			return d.forwardRequest(c)
-		})
-	}
+	// spammmer
+	routeGroup.GET(RouteSpammerStatus, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+
+	routeGroup.POST(RouteSpammerStart, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+
+	routeGroup.POST(RouteSpammerStop, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
 	return nil
-
 }
 
 func readAndCloseRequestBody(res *http.Request) ([]byte, error) {

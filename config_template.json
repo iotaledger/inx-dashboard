@@ -11,12 +11,15 @@
   "dashboard": {
     "bindAddress": "localhost:8081",
     "alias": "HORNET node",
-    "dev": false,
+    "developerMode": false,
+    "developerModeURL": "http://127.0.0.1:9090",
     "auth": {
       "sessionTimeout": "72h",
       "username": "admin",
       "passwordHash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "passwordSalt": "0000000000000000000000000000000000000000000000000000000000000000"
+      "passwordSalt": "0000000000000000000000000000000000000000000000000000000000000000",
+      "identityFilePath": "identity.key",
+      "identityPrivateKey": ""
     }
   },
   "profiling": {

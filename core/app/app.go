@@ -4,9 +4,8 @@ import (
 	"github.com/iotaledger/hive.go/app"
 	"github.com/iotaledger/hive.go/app/core/shutdown"
 	"github.com/iotaledger/hive.go/app/plugins/profiling"
-
+	"github.com/iotaledger/inx-app/inx"
 	"github.com/iotaledger/inx-dashboard/core/dashboard"
-	"github.com/iotaledger/inx-dashboard/core/inx"
 	"github.com/iotaledger/inx-dashboard/plugins/prometheus"
 )
 

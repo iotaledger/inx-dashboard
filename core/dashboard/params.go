@@ -16,8 +16,10 @@ type ParametersDashboard struct {
 	BindAddress string `default:"localhost:8081" usage:"the bind address on which the dashboard can be accessed from"`
 	// Alias is used to set an alias to identify a node
 	Alias string `default:"HORNET node" usage:"set an alias to identify a node"`
-	// DevMode defines whether to run the dashboard in dev mode
-	DevMode bool `name:"dev" default:"false" usage:"whether to run the dashboard in dev mode"`
+	// DeveloperMode defines whether to run the dashboard in dev mode
+	DeveloperMode bool `default:"false" usage:"whether to run the dashboard in dev mode"`
+	// DeveloperModeURL defines the URL to use for dev mode
+	DeveloperModeURL string `name:"developerModeURL" default:"http://127.0.0.1:9090" usage:"the URL to use for dev mode"`
 
 	Auth struct {
 		// SessionTimeout defines how long the auth session should last before expiring

@@ -13,26 +13,26 @@ const (
 	MsgTypeSyncStatus byte = iota
 	// MsgTypePublicNodeStatus is the type of the PublicNodeStatus message.
 	MsgTypePublicNodeStatus = 1
-	// MsgTypeNodeStatus is the type of the NodeStatus message.
-	MsgTypeNodeStatus = 2
-	// MsgTypeBPSMetric is the type of the blocks per second (BPS) metric message.
-	MsgTypeBPSMetric = 3
+	// MsgTypeNodeInfoExtended is the type of the NodeInfoExtended message.
+	MsgTypeNodeInfoExtended = 2
+	// MsgTypeGossipMetrics is the type of the GossipMetrics message.
+	MsgTypeGossipMetrics = 3
 	// MsgTypeMilestone is the type of the Milestone message.
 	MsgTypeMilestone = 4
 	// MsgTypePeerMetric is the type of the PeerMetric message.
 	MsgTypePeerMetric = 5
 	// MsgTypeConfirmedMsMetrics is the type of the ConfirmedMsMetrics message.
 	MsgTypeConfirmedMsMetrics = 6
-	// MsgTypeVertex is the type of the Vertex message for the visualizer.
-	MsgTypeVertex = 7
-	// MsgTypeSolidInfo is the type of the SolidInfo message for the visualizer.
-	MsgTypeSolidInfo = 8
-	// MsgTypeConfirmedInfo is the type of the ConfirmedInfo message for the visualizer.
-	MsgTypeConfirmedInfo = 9
-	// MsgTypeMilestoneInfo is the type of the MilestoneInfo message for the visualizer.
-	MsgTypeMilestoneInfo = 10
-	// MsgTypeTipInfo is the type of the TipInfo message for the visualizer.
-	MsgTypeTipInfo = 11
+	// MsgTypeVisualizerVertex is the type of the Vertex message for the visualizer.
+	MsgTypeVisualizerVertex = 7
+	// MsgTypeVisualizerSolidInfo is the type of the SolidInfo message for the visualizer.
+	MsgTypeVisualizerSolidInfo = 8
+	// MsgTypeVisualizerConfirmedInfo is the type of the ConfirmedInfo message for the visualizer.
+	MsgTypeVisualizerConfirmedInfo = 9
+	// MsgTypeVisualizerMilestoneInfo is the type of the MilestoneInfo message for the visualizer.
+	MsgTypeVisualizerMilestoneInfo = 10
+	// MsgTypeVisualizerTipInfo is the type of the TipInfo message for the visualizer.
+	MsgTypeVisualizerTipInfo = 11
 	// MsgTypeDatabaseSizeMetric is the type of the database Size message for the metrics.
 	MsgTypeDatabaseSizeMetric = 12
 )
@@ -47,14 +47,14 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 	publicTopics := []byte{
 		MsgTypeSyncStatus,
 		MsgTypePublicNodeStatus,
-		MsgTypeBPSMetric,
+		MsgTypeGossipMetrics,
 		MsgTypeMilestone,
 		MsgTypeConfirmedMsMetrics,
-		MsgTypeVertex,
-		MsgTypeSolidInfo,
-		MsgTypeConfirmedInfo,
-		MsgTypeMilestoneInfo,
-		MsgTypeTipInfo,
+		MsgTypeVisualizerVertex,
+		MsgTypeVisualizerSolidInfo,
+		MsgTypeVisualizerConfirmedInfo,
+		MsgTypeVisualizerMilestoneInfo,
+		MsgTypeVisualizerTipInfo,
 	}
 
 	isProtectedTopic := func(topic byte) bool {
@@ -68,36 +68,79 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 
 	// this function sends the initial values for some topics
 	sendInitValue := func(client *websockethub.Client, initValuesSent map[byte]struct{}, topic byte) {
-		if _, sent := initValuesSent[topic]; sent {
+		// always send the initial values for the Vertex topic, ignore others that were already sent
+		if _, sent := initValuesSent[topic]; sent && (topic != MsgTypeVisualizerVertex) {
 			return
 		}
 		initValuesSent[topic] = struct{}{}
 
 		switch topic {
+
 		case MsgTypeSyncStatus:
 			client.Send(&Msg{Type: MsgTypeSyncStatus, Data: d.getSyncStatus()})
 
 		case MsgTypePublicNodeStatus:
-			client.Send(&Msg{Type: MsgTypePublicNodeStatus, Data: d.getPublicNodeStatus()})
+			nodeInfo, err := d.getNodeInfo()
+			if err != nil {
+				d.LogWarnf("failed to get node info: %s", err)
+				return
+			}
 
-		case MsgTypeNodeStatus:
-			client.Send(&Msg{Type: MsgTypeNodeStatus, Data: d.getNodeStatus()})
+			data := getPublicNodeStatusByNodeInfo(nodeInfo, d.nodeBridge.IsNodeAlmostSynced())
+			d.hub.BroadcastMsg(&Msg{Type: MsgTypePublicNodeStatus, Data: data})
 
-		case MsgTypeConfirmedMsMetrics:
-			client.Send(&Msg{Type: MsgTypeConfirmedMsMetrics, Data: d.cachedMilestoneMetrics})
+		case MsgTypeNodeInfoExtended:
+			data, err := d.getNodeInfoExtended()
+			if err != nil {
+				d.LogWarnf("failed to get extended node info: %s", err)
+				return
+			}
+			client.Send(&Msg{Type: MsgTypeNodeInfoExtended, Data: data})
 
-		case MsgTypeDatabaseSizeMetric:
-			client.Send(&Msg{Type: MsgTypeDatabaseSizeMetric, Data: d.cachedDatabaseSizeMetrics})
+		case MsgTypeGossipMetrics:
+			data, err := d.getGossipMetrics()
+			if err != nil {
+				d.LogWarnf("failed to get gossip metrics: %s", err)
+				return
+			}
+			client.Send(&Msg{Type: MsgTypeGossipMetrics, Data: data})
 
 		case MsgTypeMilestone:
 			start := d.getLatestMilestoneIndex()
 			for msIndex := start - 10; msIndex <= start; msIndex++ {
 				if milestoneIDHex, err := d.getMilestoneIDHex(msIndex); err == nil {
-					client.Send(&Msg{Type: MsgTypeMilestone, Data: &LivefeedMilestone{MilestoneID: milestoneIDHex, Index: msIndex}})
+					client.Send(&Msg{Type: MsgTypeMilestone, Data: &Milestone{MilestoneID: milestoneIDHex, Index: msIndex}})
 				} else {
-					break
+					d.LogWarnf("failed to get milestone %d: %s", msIndex, err)
+					return
 				}
 			}
+
+		case MsgTypePeerMetric:
+			data, err := d.getPeerInfos()
+			if err != nil {
+				d.LogWarnf("failed to get peer infos: %s", err)
+				return
+			}
+			client.Send(&Msg{Type: MsgTypePeerMetric, Data: data})
+
+		case MsgTypeConfirmedMsMetrics:
+			data, err := d.getNodeInfo()
+			if err != nil {
+				d.LogWarnf("failed to get node info: %s", err)
+				return
+			}
+			client.Send(&Msg{Type: MsgTypeConfirmedMsMetrics, Data: data.Metrics})
+
+		case MsgTypeVisualizerVertex:
+			d.visualizer.ForEachCreated(func(vertex *VisualizerVertex) bool {
+				// don't drop the messages to fill the visualizer without missing any vertex
+				client.Send(&Msg{Type: MsgTypeVisualizerVertex, Data: vertex}, true)
+				return true
+			}, VisualizerInitValuesCount)
+
+		case MsgTypeDatabaseSizeMetric:
+			client.Send(&Msg{Type: MsgTypeDatabaseSizeMetric, Data: d.cachedDatabaseSizeMetrics})
 		}
 	}
 

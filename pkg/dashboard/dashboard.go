@@ -16,20 +16,15 @@ import (
 	hivedaemon "github.com/iotaledger/hive.go/daemon"
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/iotaledger/hive.go/websockethub"
+	"github.com/iotaledger/inx-app/nodebridge"
 	"github.com/iotaledger/inx-dashboard/pkg/daemon"
 	"github.com/iotaledger/inx-dashboard/pkg/jwt"
 	"github.com/iotaledger/iota.go/v3/nodeclient"
 )
 
-type (
-	getIsNodeAlmostSyncedFunc   func() bool
-	getPublicNodeStatusFunc     func() *PublicNodeStatus
-	getNodeStatusFunc           func() *NodeStatus
-	getPeerInfosFunc            func() []*PeerInfo
-	getSyncStatusFunc           func() *SyncStatus
-	getDatabaseSizeMetricFunc   func() *DatabaseSizeMetric
-	getLatestMilestoneIndexFunc func() uint32
-	getMilestoneIDHexFunc       func(index uint32) (string, error)
+const (
+	VisualizerInitValuesCount = 3000
+	VisualizerCapacity        = 3000
 )
 
 type Dashboard struct {
@@ -45,26 +40,24 @@ type Dashboard struct {
 	authSessionTimeout time.Duration
 	identityFilePath   string
 	identityPrivateKey string
-	nodeClient         *nodeclient.Client
+	developerMode      bool
+	developerModeURL   string
+	nodeBridge         *nodebridge.NodeBridge
+	tangleListener     *nodebridge.TangleListener
 	hub                *websockethub.Hub
-	basicAuth          *basicauth.BasicAuth
-	jwtAuth            *jwt.JWTAuth
 
-	getIsNodeAlmostSynced   getIsNodeAlmostSyncedFunc
-	getPublicNodeStatus     getPublicNodeStatusFunc
-	getNodeStatus           getNodeStatusFunc
-	getPeerInfos            getPeerInfosFunc
-	getSyncStatus           getSyncStatusFunc
-	getDatabaseSizeMetric   getDatabaseSizeMetricFunc
-	getLatestMilestoneIndex getLatestMilestoneIndexFunc
-	getMilestoneIDHex       getMilestoneIDHexFunc
-	developerMode           bool
+	basicAuth     *basicauth.BasicAuth
+	jwtAuth       *jwt.JWTAuth
+	nodeClient    *nodeclient.Client
+	metricsClient *MetricsClient
 
-	cachedDatabaseSizeMetrics []*DatabaseSizeMetric
-	cachedMilestoneMetrics    []*ConfirmedMilestoneMetric
+	visualizer *Visualizer
+
+	cachedDatabaseSizeMetrics []*DatabaseSizesMetric
 }
 
 func New(
+	log *logger.Logger,
 	daemon hivedaemon.Daemon,
 	bindAddress string,
 	authUserName string,
@@ -73,40 +66,26 @@ func New(
 	authSessionTimeout time.Duration,
 	identityFilePath string,
 	identityPrivateKey string,
-	nodeClient *nodeclient.Client,
-	hub *websockethub.Hub,
-	getIsNodeAlmostSynced getIsNodeAlmostSyncedFunc,
-	getPublicNodeStatus getPublicNodeStatusFunc,
-	getNodeStatus getNodeStatusFunc,
-	getPeerInfos getPeerInfosFunc,
-	getSyncStatus getSyncStatusFunc,
-	getDatabaseSizeMetric getDatabaseSizeMetricFunc,
-	getLatestMilestoneIndex getLatestMilestoneIndexFunc,
-	getMilestoneIDHex getMilestoneIDHexFunc,
 	developerMode bool,
-	log *logger.Logger) *Dashboard {
+	developerModeURL string,
+	nodeBridge *nodebridge.NodeBridge,
+	hub *websockethub.Hub) *Dashboard {
 
 	return &Dashboard{
-		WrappedLogger:           logger.NewWrappedLogger(log),
-		daemon:                  daemon,
-		bindAddress:             bindAddress,
-		authUserName:            authUserName,
-		authPasswordHash:        authPasswordHash,
-		authPasswordSalt:        authPasswordSalt,
-		authSessionTimeout:      authSessionTimeout,
-		identityFilePath:        identityFilePath,
-		identityPrivateKey:      identityPrivateKey,
-		nodeClient:              nodeClient,
-		hub:                     hub,
-		getIsNodeAlmostSynced:   getIsNodeAlmostSynced,
-		getPublicNodeStatus:     getPublicNodeStatus,
-		getNodeStatus:           getNodeStatus,
-		getPeerInfos:            getPeerInfos,
-		getSyncStatus:           getSyncStatus,
-		getDatabaseSizeMetric:   getDatabaseSizeMetric,
-		getLatestMilestoneIndex: getLatestMilestoneIndex,
-		getMilestoneIDHex:       getMilestoneIDHex,
-		developerMode:           developerMode,
+		WrappedLogger:      logger.NewWrappedLogger(log),
+		daemon:             daemon,
+		bindAddress:        bindAddress,
+		authUserName:       authUserName,
+		authPasswordHash:   authPasswordHash,
+		authPasswordSalt:   authPasswordSalt,
+		authSessionTimeout: authSessionTimeout,
+		identityFilePath:   identityFilePath,
+		identityPrivateKey: identityPrivateKey,
+		developerMode:      developerMode,
+		developerModeURL:   developerModeURL,
+		nodeBridge:         nodeBridge,
+		hub:                hub,
+		visualizer:         NewVisualizer(VisualizerCapacity),
 	}
 }
 
@@ -151,6 +130,9 @@ func (d *Dashboard) Init() {
 	}
 	d.jwtAuth = jwtAuth
 
+	d.nodeClient = d.nodeBridge.INXNodeClient()
+	d.tangleListener = nodebridge.NewTangleListener(d.nodeBridge)
+	d.metricsClient = NewMetricsClient(d.nodeClient)
 }
 
 func newEcho() *echo.Echo {
@@ -163,10 +145,6 @@ func newEcho() *echo.Echo {
 func (d *Dashboard) Run() {
 	e := newEcho()
 	d.setupRoutes(e)
-	err := d.setupNodeRoutes(e)
-	if err != nil {
-		d.LogPanicf("failed to setup node routes: %w", err)
-	}
 
 	go func() {
 		d.LogInfof("You can now access the dashboard using: http://%s", d.bindAddress)
@@ -176,59 +154,27 @@ func (d *Dashboard) Run() {
 		}
 	}()
 
-	d.run()
-}
-
-func (d *Dashboard) run() {
-	/*
-		onBPSMetricsUpdated := events.NewClosure(func(bpsMetrics *BPSMetrics) {
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypeBPSMetric, Data: bpsMetrics})
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypePublicNodeStatus, Data: d.getPublicNodeStatus()})
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypeNodeStatus, Data: d.getNodeStatus()})
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypePeerMetric, Data: d.getPeerInfos()})
-		})
-
-		onConfirmedMilestoneIndexChanged := events.NewClosure(func(_ uint32) {
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypeSyncStatus, Data: d.getSyncStatus()})
-		})
-
-		onLatestMilestoneIndexChanged := events.NewClosure(func(_ uint32) {
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypeSyncStatus, Data: d.getSyncStatus()})
-		})
-
-		onNewConfirmedMilestoneMetric := events.NewClosure(func(metric *ConfirmedMilestoneMetric) {
-			d.cachedMilestoneMetrics = append(d.cachedMilestoneMetrics, metric)
-			if len(d.cachedMilestoneMetrics) > 20 {
-				d.cachedMilestoneMetrics = d.cachedMilestoneMetrics[len(d.cachedMilestoneMetrics)-20:]
-			}
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypeConfirmedMsMetrics, Data: []*ConfirmedMilestoneMetric{metric}})
-		})
-	*/
 	if err := d.daemon.BackgroundWorker("Dashboard[WSSend]", func(ctx context.Context) {
 		go d.hub.Run(ctx)
-		/*
-			deps.Tangle.Events.BPSMetricsUpdated.Attach(onBPSMetricsUpdated)
-			deps.Tangle.Events.ConfirmedMilestoneIndexChanged.Attach(onConfirmedMilestoneIndexChanged)
-			deps.Tangle.Events.LatestMilestoneIndexChanged.Attach(onLatestMilestoneIndexChanged)
-			deps.Tangle.Events.NewConfirmedMilestoneMetric.Attach(onNewConfirmedMilestoneMetric)
-		*/
 		<-ctx.Done()
-		/*
-			d.LogInfo("Stopping Dashboard[WSSend] ...")
-			deps.Tangle.Events.BPSMetricsUpdated.Detach(onBPSMetricsUpdated)
-			deps.Tangle.Events.ConfirmedMilestoneIndexChanged.Detach(onConfirmedMilestoneIndexChanged)
-			deps.Tangle.Events.LatestMilestoneIndexChanged.Detach(onLatestMilestoneIndexChanged)
-			deps.Tangle.Events.NewConfirmedMilestoneMetric.Detach(onNewConfirmedMilestoneMetric)
-		*/
+		d.LogInfo("Stopping Dashboard[WSSend] ...")
 		d.LogInfo("Stopping Dashboard[WSSend] ... done")
 	}, daemon.PriorityStopDashboard); err != nil {
 		d.LogPanicf("failed to start worker: %s", err)
 	}
 
-	// run the milestone live feed
+	if err := d.daemon.BackgroundWorker("TangleListener", func(ctx context.Context) {
+		d.tangleListener.Run(ctx)
+	}, daemon.PriorityStopDashboard); err != nil {
+		d.LogPanicf("failed to start worker: %s", err)
+	}
+
+	d.runNodeInfoFeed()
+	d.runNodeInfoExtendedFeed()
+	d.runGossipMetricsFeed()
+	d.runSyncStatusFeed()
+	d.runPeerMetricsFeed()
 	d.runMilestoneLiveFeed()
-	// run the visualizer feed
 	d.runVisualizerFeed()
-	// run the database size collector
 	d.runDatabaseSizeCollector()
 }

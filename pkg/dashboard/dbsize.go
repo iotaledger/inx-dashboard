@@ -2,52 +2,18 @@ package dashboard
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/iotaledger/hive.go/timeutil"
 	"github.com/iotaledger/inx-dashboard/pkg/daemon"
 )
 
-func (s *DatabaseSizeMetric) MarshalJSON() ([]byte, error) {
-	size := struct {
-		Tangle int64 `json:"tangle"`
-		UTXO   int64 `json:"utxo"`
-		Total  int64 `json:"total"`
-		Time   int64 `json:"ts"`
-	}{
-		Tangle: s.Tangle,
-		UTXO:   s.UTXO,
-		Total:  s.Total,
-		Time:   s.Time.Unix(),
+func (d *Dashboard) currentDatabaseSize() *DatabaseSizesMetric {
+	newMetric, err := d.getDatabaseSizeMetric()
+	if err != nil {
+		d.LogWarnf("error in database size calculation: %s", err)
+		return nil
 	}
-
-	return json.Marshal(size)
-}
-
-func (d *Dashboard) currentDatabaseSize() *DatabaseSizeMetric {
-	/*
-		tangleDbSize, err := deps.TangleDatabase.Size()
-		if err != nil {
-			d.LogWarnf("error in tangle database size calculation: %s", err)
-			return nil
-		}
-
-		utxoDbSize, err := deps.UTXODatabase.Size()
-		if err != nil {
-			d.LogWarnf("error in utxo database size calculation: %s", err)
-			return nil
-		}
-
-		newValue := &DatabaseSizeMetric{
-			Tangle: tangleDbSize,
-			UTXO:   utxoDbSize,
-			Total:  tangleDbSize + utxoDbSize,
-			Time:   time.Now(),
-		}
-	*/
-
-	newMetric := d.getDatabaseSizeMetric()
 
 	d.cachedDatabaseSizeMetrics = append(d.cachedDatabaseSizeMetrics, newMetric)
 	if len(d.cachedDatabaseSizeMetrics) > 600 {
@@ -64,7 +30,11 @@ func (d *Dashboard) runDatabaseSizeCollector() {
 	if err := d.daemon.BackgroundWorker("Dashboard[DBSize]", func(ctx context.Context) {
 		ticker := timeutil.NewTicker(func() {
 			dbSizeMetric := d.currentDatabaseSize()
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypeDatabaseSizeMetric, Data: []*DatabaseSizeMetric{dbSizeMetric}})
+			if dbSizeMetric == nil {
+				return
+			}
+
+			d.hub.BroadcastMsg(&Msg{Type: MsgTypeDatabaseSizeMetric, Data: []*DatabaseSizesMetric{dbSizeMetric}})
 		}, 1*time.Minute, ctx)
 		ticker.WaitForGracefulShutdown()
 	}, daemon.PriorityStopDashboard); err != nil {
