@@ -1,215 +1,372 @@
 package dashboard
 
 import (
+	"bytes"
 	"fmt"
-	"net"
+	"io"
+	"io/ioutil"
 	"net/http"
-	"net/url"
-	"regexp"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/pkg/errors"
-	"golang.org/x/time/rate"
-
-	"github.com/iotaledger/hornet-dashboard"
-	"github.com/iotaledger/hornet/pkg/jwt"
-	"github.com/iotaledger/hornet/pkg/restapi"
 )
 
 const (
-	WebsocketCmdRegister   = 0
-	WebsocketCmdUnregister = 1
+	FeatureDashboardMetrics = "dashboard-metrics/v1"
+	FeatureIndexer          = "indexer/v1"
+	FeatureParticipation    = "participation/v1"
+	FeatureSpammer          = "spammer/v1"
+
+	APIRoute                    = "/api/v2"
+	PluginDashboardMetricsRoute = "/api/plugins/" + FeatureDashboardMetrics
+	PluginIndexerRoute          = "/api/plugins/" + FeatureIndexer
+	PluginParticipationRoute    = "/api/plugins/" + FeatureParticipation
+	PluginSpammerRoute          = "/api/plugins/" + FeatureSpammer
 )
 
-func devModeReverseProxyMiddleware() echo.MiddlewareFunc {
+const (
+	// ParameterBlockID is used to identify a block by its ID.
+	ParameterBlockID = "blockID"
 
-	apiURL, err := url.Parse("http://127.0.0.1:9090")
-	if err != nil {
-		Plugin.LogFatalf("wrong devmode url: %s", err)
-	}
+	// ParameterTransactionID is used to identify a transaction by its ID.
+	ParameterTransactionID = "transactionID"
 
-	return middleware.Proxy(middleware.NewRoundRobinBalancer([]*middleware.ProxyTarget{
-		{
-			URL: apiURL,
-		},
-	}))
-}
+	// ParameterOutputID is used to identify an output by its ID.
+	ParameterOutputID = "outputID"
 
-func compileRouteAsRegex(route string) *regexp.Regexp {
+	// ParameterMilestoneIndex is used to identify a milestone by index.
+	ParameterMilestoneIndex = "milestoneIndex"
 
-	r := regexp.QuoteMeta(route)
-	r = strings.Replace(r, `\*`, "(.*?)", -1)
-	r = r + "$"
+	// ParameterMilestoneID is used to identify a milestone by its ID.
+	ParameterMilestoneID = "milestoneID"
 
-	reg, err := regexp.Compile(r)
-	if err != nil {
-		return nil
-	}
-	return reg
-}
+	// ParameterPeerID is used to identify a peer.
+	ParameterPeerID = "peerID"
 
-func compileRoutesAsRegexes(routes []string) []*regexp.Regexp {
-	var regexes []*regexp.Regexp
-	for _, route := range routes {
-		reg := compileRouteAsRegex(route)
-		if reg == nil {
-			Plugin.LogFatalf("Invalid route in config: %s", route)
-			continue
-		}
-		regexes = append(regexes, reg)
-	}
-	return regexes
-}
+	// RouteInfo is the route for getting the node info.
+	// GET returns the node info.
+	RouteInfo = APIRoute + "/info"
 
-func apiMiddlewares() []echo.MiddlewareFunc {
+	// RouteBlock is the route for getting a block by its blockID.
+	// GET returns the block based on the given type in the request "Accept" header.
+	// MIMEApplicationJSON => json
+	// MIMEVendorIOTASerializer => bytes
+	RouteBlock = APIRoute + "/blocks/:" + ParameterBlockID
 
-	apiBindAddr := deps.RestAPIBindAddress
-	_, apiBindPort, err := net.SplitHostPort(apiBindAddr)
-	if err != nil {
-		Plugin.LogFatalf("wrong REST API bind address: %s", err)
-	}
+	// RouteBlockMetadata is the route for getting block metadata by its blockID.
+	// GET returns block metadata (including info about "promotion/reattachment needed").
+	RouteBlockMetadata = APIRoute + "/blocks/:" + ParameterBlockID + "/metadata"
 
-	apiURL, err := url.Parse(fmt.Sprintf("http://localhost:%s", apiBindPort))
-	if err != nil {
-		Plugin.LogFatalf("wrong dashboard API url: %s", err)
-	}
+	// RouteTransactionsIncludedBlock is the route for getting the block that was included in the ledger for a given transaction ID.
+	// GET returns the block based on the given type in the request "Accept" header.
+	// MIMEApplicationJSON => json
+	// MIMEVendorIOTASerializer => bytes
+	RouteTransactionsIncludedBlock = APIRoute + "/transactions/:" + ParameterTransactionID + "/included-block"
 
-	proxySkipper := func(context echo.Context) bool {
-		// Only proxy allowed routes, skip all others
-		return !deps.DashboardAllowedAPIRoute(context)
-	}
+	// RouteMilestoneByID is the route for getting a milestone by its ID.
+	// GET returns the milestone.
+	// MIMEApplicationJSON => json
+	// MIMEVendorIOTASerializer => bytes
+	RouteMilestoneByID = APIRoute + "/milestones/:" + ParameterMilestoneID
 
-	balancer := middleware.NewRoundRobinBalancer([]*middleware.ProxyTarget{
-		{
-			URL: apiURL,
-		},
+	// RouteMilestoneByIndex is the route for getting a milestone by its milestoneIndex.
+	// GET returns the milestone.
+	// MIMEApplicationJSON => json
+	// MIMEVendorIOTASerializer => bytes
+	RouteMilestoneByIndex = APIRoute + "/milestones/by-index/:" + ParameterMilestoneIndex
+
+	// RouteOutput is the route for getting an output by its outputID (transactionHash + outputIndex).
+	// GET returns the output based on the given type in the request "Accept" header.
+	// MIMEApplicationJSON => json
+	// MIMEVendorIOTASerializer => bytes
+	RouteOutput = APIRoute + "/outputs/:" + ParameterOutputID
+
+	// RoutePeer is the route for getting peers by their peerID.
+	// GET returns the peer
+	// DELETE deletes the peer.
+	RoutePeer = APIRoute + "/peers/:" + ParameterPeerID
+
+	// RoutePeers is the route for getting all peers of the node.
+	// GET returns a list of all peers.
+	// POST adds a new peer.
+	RoutePeers = APIRoute + "/peers"
+)
+
+const (
+	// ParameterFoundryID is used to identify a foundry by its ID.
+	ParameterFoundryID = "foundryID"
+
+	// ParameterAliasID is used to identify an alias by its ID.
+	ParameterAliasID = "aliasID"
+
+	// ParameterNFTID is used to identify a nft by its ID.
+	ParameterNFTID = "nftID"
+
+	// RouteOutputsBasic is the route for getting basic outputs filtered by the given parameters.
+	// GET with query parameter returns all outputIDs that fit these filter criteria.
+	// Query parameters: "address", "hasStorageReturnCondition", "storageReturnAddress", "hasExpirationCondition",
+	//					 "expiresBefore", "expiresAfter", "expiresBeforeMilestone", "expiresAfterMilestone",
+	//					 "hasTimelockCondition", "timelockedBefore", "timelockedAfter", "timelockedBeforeMilestone",
+	//					 "timelockedAfterMilestone", "sender", "tag", "createdBefore", "createdAfter"
+	// Returns an empty list if no results are found.
+	RouteOutputsBasic = PluginIndexerRoute + "/outputs/basic"
+
+	// RouteOutputsAliases is the route for getting aliases filtered by the given parameters.
+	// GET with query parameter returns all outputIDs that fit these filter criteria.
+	// Query parameters: "stateController", "governor", "issuer", "sender", "createdBefore", "createdAfter"
+	// Returns an empty list if no results are found.
+	RouteOutputsAliases = PluginIndexerRoute + "/outputs/alias"
+
+	// RouteOutputsAliasByID is the route for getting aliases by their aliasID.
+	// GET returns the outputIDs or 404 if no record is found.
+	RouteOutputsAliasByID = PluginIndexerRoute + "/outputs/alias/:" + ParameterAliasID
+
+	// RouteOutputsNFTs is the route for getting NFT filtered by the given parameters.
+	// Query parameters: "address", "hasStorageReturnCondition", "storageReturnAddress", "hasExpirationCondition",
+	//					 "expiresBefore", "expiresAfter", "expiresBeforeMilestone", "expiresAfterMilestone",
+	//					 "hasTimelockCondition", "timelockedBefore", "timelockedAfter", "timelockedBeforeMilestone",
+	//					 "timelockedAfterMilestone", "issuer", "sender", "tag", "createdBefore", "createdAfter"
+	// Returns an empty list if no results are found.
+	RouteOutputsNFTs = PluginIndexerRoute + "/outputs/nft"
+
+	// RouteOutputsNFTByID is the route for getting NFT by their nftID.
+	// GET returns the outputIDs or 404 if no record is found.
+	RouteOutputsNFTByID = PluginIndexerRoute + "/outputs/nft/:" + ParameterNFTID
+
+	// RouteOutputsFoundries is the route for getting foundries filtered by the given parameters.
+	// GET with query parameter returns all outputIDs that fit these filter criteria.
+	// Query parameters: "aliasAddress", "createdBefore", "createdAfter"
+	// Returns an empty list if no results are found.
+	RouteOutputsFoundries = PluginIndexerRoute + "/outputs/foundry"
+
+	// RouteOutputsFoundryByID is the route for getting foundries by their foundryID.
+	// GET returns the outputIDs or 404 if no record is found.
+	RouteOutputsFoundryByID = PluginIndexerRoute + "/outputs/foundry/:" + ParameterFoundryID
+)
+
+const (
+	// RouteNodeInfoExtended is the route to get additional info about the node.
+	// GET returns the extended info of the node.
+	RouteNodeInfoExtended = PluginDashboardMetricsRoute + "/info"
+
+	// RouteDatabaseSizes is the route to get the size of the databases.
+	// GET returns the sizes of the databases.
+	RouteDatabaseSizes = PluginDashboardMetricsRoute + "/database/sizes"
+
+	// RouteGossipMetrics is the route to get metrics about gossip.
+	// GET returns the gossip metrics.
+	RouteGossipMetrics = PluginDashboardMetricsRoute + "/gossip"
+)
+
+const (
+	// ParameterParticipationEventID is used to identify an event by its ID.
+	ParameterParticipationEventID = "eventID"
+
+	// RouteParticipationEvents is the route to list all events, returning their ID, the event name and status.
+	// GET returns a list of all events known to the node. Optional query parameter returns filters events by type (query parameters: "type").
+	RouteParticipationEvents = PluginParticipationRoute + "/events"
+
+	// RouteParticipationEvent is the route to access a single participation by its ID.
+	// GET gives a quick overview of the participation. This does not include the current standings.
+	RouteParticipationEvent = PluginParticipationRoute + "/events/:" + ParameterParticipationEventID
+
+	// RouteParticipationEventStatus is the route to access the status of a single participation by its ID.
+	// GET returns the amount of tokens participating and accumulated votes for the ballot if the event contains a ballot. Optional query parameter returns the status for the given milestone index (query parameters: "milestoneIndex").
+	RouteParticipationEventStatus = PluginParticipationRoute + "/events/:" + ParameterParticipationEventID + "/status"
+
+	// RouteAdminCreateEvent is the route the node operator can use to add events.
+	// POST creates a new event to track
+	RouteAdminCreateEvent = PluginParticipationRoute + "/admin/events"
+
+	// RouteAdminDeleteEvent is the route the node operator can use to remove events.
+	// DELETE removes a tracked participation.
+	RouteAdminDeleteEvent = PluginParticipationRoute + "/admin/events/:" + ParameterParticipationEventID
+)
+
+const (
+	// RouteSpammerStatus is the route to get the status of the spammer.
+	// GET the current status of the spammer.
+	RouteSpammerStatus = PluginSpammerRoute + "/status"
+
+	// RouteSpammerStart is the route to start the spammer (with optional changing the settings).
+	// POST the settings to change and start the spammer.
+	RouteSpammerStart = PluginSpammerRoute + "/start"
+
+	// RouteSpammerStop is the route to stop the spammer.
+	// POST to stop the spammer.
+	RouteSpammerStop = PluginSpammerRoute + "/stop"
+)
+
+func (d *Dashboard) setupAPIRoutes(routeGroup *echo.Group) error {
+
+	routeGroup.GET(RouteInfo, func(c echo.Context) error {
+		return d.forwardRequest(c)
 	})
 
-	proxyConfig := middleware.ProxyConfig{
-		Skipper:  proxySkipper,
-		Balancer: balancer,
-	}
+	routeGroup.GET(RouteBlockMetadata, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-	// the HTTP REST routes which can be called without authorization.
-	// Wildcards using * are allowed
-	publicRoutes := []string{
-		"/api/plugins/indexer/v1/*",
-	}
+	routeGroup.GET(RouteBlock, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-	// the HTTP REST routes which need to be called with authorization even if the API is not protected.
-	// Wildcards using * are allowed
-	protectedRoutes := []string{
-		"/api/v2/peers*",
-		"/api/plugins/*",
-	}
+	routeGroup.GET(RouteTransactionsIncludedBlock, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-	publicRoutesRegEx := compileRoutesAsRegexes(publicRoutes)
-	protectedRoutesRegEx := compileRoutesAsRegexes(protectedRoutes)
+	routeGroup.GET(RouteMilestoneByID, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-	matchPublic := func(c echo.Context) bool {
-		loweredPath := strings.ToLower(c.Request().URL.EscapedPath())
+	routeGroup.GET(RouteMilestoneByIndex, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-		for _, reg := range publicRoutesRegEx {
-			if reg.MatchString(loweredPath) {
-				return true
-			}
-		}
-		return false
-	}
+	routeGroup.GET(RouteOutput, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-	matchProtected := func(c echo.Context) bool {
-		loweredPath := strings.ToLower(c.Request().URL.EscapedPath())
+	routeGroup.DELETE(RoutePeer, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-		for _, reg := range protectedRoutesRegEx {
-			if reg.MatchString(loweredPath) {
-				return true
-			}
-		}
-		return false
-	}
+	routeGroup.POST(RoutePeers, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-	// Skip routes explicitely matching the publicRoutes, or not matching the protectedRoutes
-	jwtAuthSkipper := func(c echo.Context) bool {
-		return matchPublic(c) || !matchProtected(c)
-	}
+	// dashboard metrics
+	routeGroup.GET(RouteNodeInfoExtended, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-	// Only allow JWT created for the dashboard
-	jwtAllow := func(_ echo.Context, subject string, claims *jwt.AuthClaims) bool {
-		if claims.Dashboard {
-			return claims.VerifySubject(subject)
-		}
-		return false
-	}
+	routeGroup.GET(RouteDatabaseSizes, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
 
-	return []echo.MiddlewareFunc{
-		jwtAuth.Middleware(jwtAuthSkipper, jwtAllow),
-		middleware.ProxyWithConfig(proxyConfig),
-	}
+	routeGroup.GET(RouteGossipMetrics, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+
+	// indexer
+	routeGroup.GET(RouteOutputsBasic, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+	routeGroup.GET(RouteOutputsAliases, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+	routeGroup.GET(RouteOutputsAliasByID, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+	routeGroup.GET(RouteOutputsNFTs, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+	routeGroup.GET(RouteOutputsNFTByID, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+	routeGroup.GET(RouteOutputsFoundries, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+	routeGroup.GET(RouteOutputsFoundryByID, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+
+	// participation
+	routeGroup.GET(RouteParticipationEvents, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+
+	routeGroup.GET(RouteParticipationEvent, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+
+	routeGroup.GET(RouteParticipationEventStatus, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+
+	routeGroup.POST(RouteAdminCreateEvent, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+
+	routeGroup.DELETE(RouteAdminDeleteEvent, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+
+	// spammmer
+	routeGroup.GET(RouteSpammerStatus, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+
+	routeGroup.POST(RouteSpammerStart, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+
+	routeGroup.POST(RouteSpammerStop, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+
+	return nil
 }
 
-func authRoute(c echo.Context) error {
-
-	type loginRequest struct {
-		JWT      string `json:"jwt"`
-		User     string `json:"user"`
-		Password string `json:"password"`
+func readAndCloseRequestBody(res *http.Request) ([]byte, error) {
+	defer res.Body.Close()
+	resBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read response body: %w", err)
 	}
+	return resBody, nil
+}
 
-	request := &loginRequest{}
-
-	if err := c.Bind(request); err != nil {
-		return errors.WithMessagef(restapi.ErrInvalidParameter, "invalid request, error: %s", err)
+func readAndCloseResponseBody(res *http.Response) ([]byte, error) {
+	defer res.Body.Close()
+	resBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read response body: %w", err)
 	}
+	return resBody, nil
+}
 
-	if len(request.JWT) > 0 {
-		// Verify JWT is still valid
-		if !jwtAuth.VerifyJWT(request.JWT, func(claims *jwt.AuthClaims) bool {
-			return claims.Dashboard
-		}) {
-			return echo.ErrUnauthorized
-		}
-	} else if !basicAuth.VerifyUsernameAndPassword(request.User, request.Password) {
-		return echo.ErrUnauthorized
-	}
+func (d *Dashboard) forwardRequest(c echo.Context) error {
 
-	t, err := jwtAuth.IssueJWT(false, true)
+	reqBody, err := readAndCloseRequestBody(c.Request())
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{
-		"jwt": t,
-	})
-}
+	// construct request URL
+	url := fmt.Sprintf("%s%s", d.nodeClient.BaseURL, strings.Replace(c.Request().URL.Path, "/dashboard", "", 1))
 
-func setupRoutes(e *echo.Echo) {
-
-	e.Use(middleware.CSRF())
-
-	mw := dashboard.FrontendMiddleware()
-	if ParamsDashboard.DevMode {
-		mw = devModeReverseProxyMiddleware()
-	}
-	e.Group("/*").Use(mw)
-
-	// Pass all the dashboard request through to the local rest API
-	e.Group("/api", apiMiddlewares()...)
-
-	e.GET("/ws", websocketRoute)
-
-	// Rate-limit the auth endpoint
-	rateLimiterConfig := middleware.RateLimiterConfig{
-		Store: middleware.NewRateLimiterMemoryStoreWithConfig(
-			middleware.RateLimiterMemoryStoreConfig{
-				Rate:      rate.Limit(5 / 60.0), // 5 request every 1 minute
-				Burst:     10,                   // additional burst of 10 requests
-				ExpiresIn: 5 * time.Minute,
-			},
-		),
+	// construct request
+	req, err := http.NewRequestWithContext(c.Request().Context(), c.Request().Method, url, func() io.Reader {
+		if reqBody == nil {
+			return nil
+		}
+		return bytes.NewReader(reqBody)
+	}())
+	if err != nil {
+		return fmt.Errorf("unable to build http request: %w", err)
 	}
 
-	e.POST("/auth", authRoute, middleware.RateLimiterWithConfig(rateLimiterConfig))
+	if c.Request().URL.User != nil {
+		// set the userInfo for basic auth
+		req.URL.User = c.Request().URL.User
+	}
+
+	contentType := c.Request().Header.Get("Content-Type")
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+
+	// make the request
+	res, err := d.nodeClient.HTTPClient().Do(req)
+	if err != nil {
+		return err
+	}
+
+	resBody, err := readAndCloseResponseBody(res)
+	if err != nil {
+		return err
+	}
+
+	return c.JSONBlob(res.StatusCode, resBody)
 }

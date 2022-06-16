@@ -5,7 +5,7 @@ import (
 
 	"github.com/iotaledger/hive.go/syncutils"
 	"github.com/iotaledger/hive.go/websockethub"
-	"github.com/iotaledger/hornet/pkg/jwt"
+	"github.com/iotaledger/inx-dashboard/pkg/jwt"
 )
 
 const (
@@ -13,52 +13,48 @@ const (
 	MsgTypeSyncStatus byte = iota
 	// MsgTypePublicNodeStatus is the type of the PublicNodeStatus message.
 	MsgTypePublicNodeStatus = 1
-	// MsgTypeNodeStatus is the type of the NodeStatus message.
-	MsgTypeNodeStatus = 2
-	// MsgTypeBPSMetric is the type of the blocks per second (BPS) metric message.
-	MsgTypeBPSMetric = 3
-	// MsgTypeTipSelMetric is the type of the TipSelMetric message.
-	//MsgTypeTipSelMetric = 4
+	// MsgTypeNodeInfoExtended is the type of the NodeInfoExtended message.
+	MsgTypeNodeInfoExtended = 2
+	// MsgTypeGossipMetrics is the type of the GossipMetrics message.
+	MsgTypeGossipMetrics = 3
 	// MsgTypeMilestone is the type of the Milestone message.
-	MsgTypeMilestone = 5
+	MsgTypeMilestone = 4
 	// MsgTypePeerMetric is the type of the PeerMetric message.
-	MsgTypePeerMetric = 6
+	MsgTypePeerMetric = 5
 	// MsgTypeConfirmedMsMetrics is the type of the ConfirmedMsMetrics message.
-	MsgTypeConfirmedMsMetrics = 7
-	// MsgTypeVertex is the type of the Vertex message for the visualizer.
-	MsgTypeVertex = 8
-	// MsgTypeSolidInfo is the type of the SolidInfo message for the visualizer.
-	MsgTypeSolidInfo = 9
-	// MsgTypeConfirmedInfo is the type of the ConfirmedInfo message for the visualizer.
-	MsgTypeConfirmedInfo = 10
-	// MsgTypeMilestoneInfo is the type of the MilestoneInfo message for the visualizer.
-	MsgTypeMilestoneInfo = 11
-	// MsgTypeTipInfo is the type of the TipInfo message for the visualizer.
-	MsgTypeTipInfo = 12
+	MsgTypeConfirmedMsMetrics = 6
+	// MsgTypeVisualizerVertex is the type of the Vertex message for the visualizer.
+	MsgTypeVisualizerVertex = 7
+	// MsgTypeVisualizerSolidInfo is the type of the SolidInfo message for the visualizer.
+	MsgTypeVisualizerSolidInfo = 8
+	// MsgTypeVisualizerConfirmedInfo is the type of the ConfirmedInfo message for the visualizer.
+	MsgTypeVisualizerConfirmedInfo = 9
+	// MsgTypeVisualizerMilestoneInfo is the type of the MilestoneInfo message for the visualizer.
+	MsgTypeVisualizerMilestoneInfo = 10
+	// MsgTypeVisualizerTipInfo is the type of the TipInfo message for the visualizer.
+	MsgTypeVisualizerTipInfo = 11
 	// MsgTypeDatabaseSizeMetric is the type of the database Size message for the metrics.
-	MsgTypeDatabaseSizeMetric = 13
-	// MsgTypeDatabaseCleanupEvent is the type of the database cleanup message for the metrics.
-	MsgTypeDatabaseCleanupEvent = 14
+	MsgTypeDatabaseSizeMetric = 12
 )
 
-func websocketRoute(ctx echo.Context) error {
+func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 	defer func() {
 		if r := recover(); r != nil {
-			Plugin.LogErrorf("recovered from panic within WS handle func: %s", r)
+			d.LogErrorf("recovered from panic within WS handle func: %s", r)
 		}
 	}()
 
 	publicTopics := []byte{
 		MsgTypeSyncStatus,
 		MsgTypePublicNodeStatus,
-		MsgTypeBPSMetric,
+		MsgTypeGossipMetrics,
 		MsgTypeMilestone,
 		MsgTypeConfirmedMsMetrics,
-		MsgTypeVertex,
-		MsgTypeSolidInfo,
-		MsgTypeConfirmedInfo,
-		MsgTypeMilestoneInfo,
-		MsgTypeTipInfo,
+		MsgTypeVisualizerVertex,
+		MsgTypeVisualizerSolidInfo,
+		MsgTypeVisualizerConfirmedInfo,
+		MsgTypeVisualizerMilestoneInfo,
+		MsgTypeVisualizerTipInfo,
 	}
 
 	isProtectedTopic := func(topic byte) bool {
@@ -72,39 +68,79 @@ func websocketRoute(ctx echo.Context) error {
 
 	// this function sends the initial values for some topics
 	sendInitValue := func(client *websockethub.Client, initValuesSent map[byte]struct{}, topic byte) {
-		if _, sent := initValuesSent[topic]; sent {
+		// always send the initial values for the Vertex topic, ignore others that were already sent
+		if _, sent := initValuesSent[topic]; sent && (topic != MsgTypeVisualizerVertex) {
 			return
 		}
 		initValuesSent[topic] = struct{}{}
 
 		switch topic {
+
 		case MsgTypeSyncStatus:
-			client.Send(&Msg{Type: MsgTypeSyncStatus, Data: currentSyncStatus()})
+			client.Send(&Msg{Type: MsgTypeSyncStatus, Data: d.getSyncStatus()})
 
 		case MsgTypePublicNodeStatus:
-			client.Send(&Msg{Type: MsgTypePublicNodeStatus, Data: currentPublicNodeStatus()})
+			nodeInfo, err := d.getNodeInfo()
+			if err != nil {
+				d.LogWarnf("failed to get node info: %s", err)
+				return
+			}
 
-		case MsgTypeNodeStatus:
-			client.Send(&Msg{Type: MsgTypeNodeStatus, Data: currentNodeStatus()})
+			data := getPublicNodeStatusByNodeInfo(nodeInfo, d.nodeBridge.IsNodeAlmostSynced())
+			d.hub.BroadcastMsg(&Msg{Type: MsgTypePublicNodeStatus, Data: data})
 
-		case MsgTypeConfirmedMsMetrics:
-			client.Send(&Msg{Type: MsgTypeConfirmedMsMetrics, Data: cachedMilestoneMetrics})
+		case MsgTypeNodeInfoExtended:
+			data, err := d.getNodeInfoExtended()
+			if err != nil {
+				d.LogWarnf("failed to get extended node info: %s", err)
+				return
+			}
+			client.Send(&Msg{Type: MsgTypeNodeInfoExtended, Data: data})
 
-		case MsgTypeDatabaseSizeMetric:
-			client.Send(&Msg{Type: MsgTypeDatabaseSizeMetric, Data: cachedDBSizeMetrics})
-
-		case MsgTypeDatabaseCleanupEvent:
-			client.Send(&Msg{Type: MsgTypeDatabaseCleanupEvent, Data: lastDBCleanup})
+		case MsgTypeGossipMetrics:
+			data, err := d.getGossipMetrics()
+			if err != nil {
+				d.LogWarnf("failed to get gossip metrics: %s", err)
+				return
+			}
+			client.Send(&Msg{Type: MsgTypeGossipMetrics, Data: data})
 
 		case MsgTypeMilestone:
-			start := deps.SyncManager.LatestMilestoneIndex()
+			start := d.getLatestMilestoneIndex()
 			for msIndex := start - 10; msIndex <= start; msIndex++ {
-				if milestoneIDHex, err := getMilestoneIDHex(msIndex); err == nil {
-					client.Send(&Msg{Type: MsgTypeMilestone, Data: &LivefeedMilestone{MilestoneID: milestoneIDHex, Index: msIndex}})
+				if milestoneIDHex, err := d.getMilestoneIDHex(msIndex); err == nil {
+					client.Send(&Msg{Type: MsgTypeMilestone, Data: &Milestone{MilestoneID: milestoneIDHex, Index: msIndex}})
 				} else {
-					break
+					d.LogWarnf("failed to get milestone %d: %s", msIndex, err)
+					return
 				}
 			}
+
+		case MsgTypePeerMetric:
+			data, err := d.getPeerInfos()
+			if err != nil {
+				d.LogWarnf("failed to get peer infos: %s", err)
+				return
+			}
+			client.Send(&Msg{Type: MsgTypePeerMetric, Data: data})
+
+		case MsgTypeConfirmedMsMetrics:
+			data, err := d.getNodeInfo()
+			if err != nil {
+				d.LogWarnf("failed to get node info: %s", err)
+				return
+			}
+			client.Send(&Msg{Type: MsgTypeConfirmedMsMetrics, Data: data.Metrics})
+
+		case MsgTypeVisualizerVertex:
+			d.visualizer.ForEachCreated(func(vertex *VisualizerVertex) bool {
+				// don't drop the messages to fill the visualizer without missing any vertex
+				client.Send(&Msg{Type: MsgTypeVisualizerVertex, Data: vertex}, true)
+				return true
+			}, VisualizerInitValuesCount)
+
+		case MsgTypeDatabaseSizeMetric:
+			client.Send(&Msg{Type: MsgTypeDatabaseSizeMetric, Data: d.cachedDatabaseSizeMetrics})
 		}
 	}
 
@@ -112,7 +148,7 @@ func websocketRoute(ctx echo.Context) error {
 	registeredTopics := make(map[byte]struct{})
 	initValuesSent := make(map[byte]struct{})
 
-	hub.ServeWebsocket(ctx.Response(), ctx.Request(),
+	d.hub.ServeWebsocket(ctx.Response(), ctx.Request(),
 		// onCreate gets called when the client is created
 		func(client *websockethub.Client) {
 			client.FilterCallback = func(_ *websockethub.Client, data interface{}) bool {
@@ -158,8 +194,8 @@ func websocketRoute(ctx echo.Context) error {
 										continue
 									}
 									token := string(msg.Data[2:])
-									if !jwtAuth.VerifyJWT(token, func(claims *jwt.AuthClaims) bool {
-										return claims.Dashboard
+									if !d.jwtAuth.VerifyJWT(token, func(claims *jwt.AuthClaims) bool {
+										return true
 									}) {
 										// Dot not allow unsecure subscriptions to protected topics
 										continue
@@ -187,7 +223,7 @@ func websocketRoute(ctx echo.Context) error {
 
 		// onConnect gets called when the client was registered
 		func(_ *websockethub.Client) {
-			Plugin.LogInfo("WebSocket client connection established")
+			d.LogInfo("WebSocket client connection established")
 		})
 
 	return nil
