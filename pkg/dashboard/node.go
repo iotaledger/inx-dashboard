@@ -22,6 +22,7 @@ func getPublicNodeStatusByNodeInfo(nodeInfo *nodeclient.InfoResponse, isAlmostSy
 		IsSynced:     isAlmostSynced,
 	}
 }
+
 func (d *Dashboard) getNodeInfo() (*nodeclient.InfoResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), nodeTimeout)
 	defer cancel()
