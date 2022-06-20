@@ -14,7 +14,7 @@ var (
 	Name = "inx-dashboard"
 
 	// Version of the app.
-	Version = "0.1.1"
+	Version = "0.2.0"
 )
 
 func App() *app.App {
