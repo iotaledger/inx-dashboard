@@ -334,7 +334,7 @@ func (d *Dashboard) forwardRequest(c echo.Context) error {
 	}
 
 	// construct request URL
-	url := fmt.Sprintf("%s%s", d.nodeClient.BaseURL, strings.Replace(c.Request().URL.Path, "/dashboard", "", 1))
+	url := fmt.Sprintf("%s%s", d.nodeClient.BaseURL, strings.Replace(c.Request().RequestURI, "/dashboard", "", 1))
 
 	// construct request
 	req, err := http.NewRequestWithContext(c.Request().Context(), c.Request().Method, url, func() io.Reader {
