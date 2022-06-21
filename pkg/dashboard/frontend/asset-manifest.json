@@ -1,12 +1,12 @@
 {
   "files": {
     "main.css": "/static/css/main.9e84f622.chunk.css",
-    "main.js": "/static/js/main.c2c6ed58.chunk.js",
-    "main.js.map": "/static/js/main.c2c6ed58.chunk.js.map",
+    "main.js": "/static/js/main.70544737.chunk.js",
+    "main.js.map": "/static/js/main.70544737.chunk.js.map",
     "runtime-main.js": "/static/js/runtime-main.a14c5c64.js",
     "runtime-main.js.map": "/static/js/runtime-main.a14c5c64.js.map",
-    "static/js/2.f3e272dc.chunk.js": "/static/js/2.f3e272dc.chunk.js",
-    "static/js/2.f3e272dc.chunk.js.map": "/static/js/2.f3e272dc.chunk.js.map",
+    "static/js/2.274dd4a0.chunk.js": "/static/js/2.274dd4a0.chunk.js",
+    "static/js/2.274dd4a0.chunk.js.map": "/static/js/2.274dd4a0.chunk.js.map",
     "static/js/3.fd205250.chunk.js": "/static/js/3.fd205250.chunk.js",
     "static/js/3.fd205250.chunk.js.map": "/static/js/3.fd205250.chunk.js.map",
     "static/js/4.92859f76.chunk.js": "/static/js/4.92859f76.chunk.js",
@@ -25,7 +25,7 @@
     "static/js/10.9e455555.chunk.js.map": "/static/js/10.9e455555.chunk.js.map",
     "index.html": "/index.html",
     "static/css/main.9e84f622.chunk.css.map": "/static/css/main.9e84f622.chunk.css.map",
-    "static/js/2.f3e272dc.chunk.js.LICENSE.txt": "/static/js/2.f3e272dc.chunk.js.LICENSE.txt",
+    "static/js/2.274dd4a0.chunk.js.LICENSE.txt": "/static/js/2.274dd4a0.chunk.js.LICENSE.txt",
     "static/media/banner-curve.abe8a24f.svg": "/static/media/banner-curve.abe8a24f.svg",
     "static/media/banner.svg": "/static/media/banner.c6826755.svg",
     "static/media/chevron-down.7aa53193.svg": "/static/media/chevron-down.7aa53193.svg",
@@ -34,6 +34,7 @@
     "static/media/close.3328747e.svg": "/static/media/close.3328747e.svg",
     "static/media/confirmation.11145892.svg": "/static/media/confirmation.11145892.svg",
     "static/media/copy.c627cf0b.svg": "/static/media/copy.c627cf0b.svg",
+    "static/media/db-icon.0d2bef5e.svg": "/static/media/db-icon.0d2bef5e.svg",
     "static/media/index.scss": "/static/media/ibm-plex-mono-v6-latin-regular.c708fd4f.woff2",
     "static/media/download.7bde89e5.svg": "/static/media/download.7bde89e5.svg",
     "static/media/dropdown-arrow.dc7cfa60.svg": "/static/media/dropdown-arrow.dc7cfa60.svg",
@@ -63,8 +64,8 @@
   },
   "entrypoints": [
     "static/js/runtime-main.a14c5c64.js",
-    "static/js/2.f3e272dc.chunk.js",
+    "static/js/2.274dd4a0.chunk.js",
     "static/css/main.9e84f622.chunk.css",
-    "static/js/main.c2c6ed58.chunk.js"
+    "static/js/main.70544737.chunk.js"
   ]
 }
