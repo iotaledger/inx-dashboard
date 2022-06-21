@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 
-	dashboard "github.com/iotaledger/hornet-dashboard"
 	"github.com/iotaledger/inx-dashboard/pkg/common"
 	"github.com/iotaledger/inx-dashboard/pkg/jwt"
 )
@@ -163,7 +162,7 @@ func (d *Dashboard) setupRoutes(e *echo.Echo) {
 
 	e.Use(middleware.CSRF())
 
-	mw := dashboard.FrontendMiddleware()
+	mw := frontendMiddleware()
 	if d.developerMode {
 		mw = d.devModeReverseProxyMiddleware()
 	}
