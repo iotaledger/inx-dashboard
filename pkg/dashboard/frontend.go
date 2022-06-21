@@ -47,7 +47,7 @@ func frontendMiddleware() echo.MiddlewareFunc {
 		return func(c echo.Context) (err error) {
 			contentType := calculateMimeType(c)
 
-			path := strings.TrimPrefix(c.Request().URL.Path, "/")
+			path := strings.TrimPrefix(c.Request().URL.Path, "/dashboard/")
 			if len(path) == 0 {
 				path = "index.html"
 				contentType = echo.MIMETextHTMLCharsetUTF8

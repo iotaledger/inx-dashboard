@@ -18,9 +18,10 @@ const (
 	FeatureParticipation    = "participation/v1"
 	FeatureSpammer          = "spammer/v1"
 
-	BasePath              = "/api"
+	BasePath              = ""
+	APIBasePath           = "/api"
 	CoreAPIRoute          = BasePath + "/" + FeatureCoreAPI
-	DashboardMetricsRoute = BasePath + "/" + FeatureDashboardMetrics
+	DashboardMetricsRoute = APIBasePath + "/" + FeatureDashboardMetrics
 	IndexerRoute          = BasePath + "/" + FeatureIndexer
 	ParticipationRoute    = BasePath + "/" + FeatureParticipation
 	SpammerRoute          = BasePath + "/" + FeatureSpammer
@@ -242,19 +243,6 @@ func (d *Dashboard) setupAPIRoutes(routeGroup *echo.Group) error {
 	})
 
 	routeGroup.POST(RouteCorePeers, func(c echo.Context) error {
-		return d.forwardRequest(c)
-	})
-
-	// dashboard metrics
-	routeGroup.GET(RouteDashboardNodeInfoExtended, func(c echo.Context) error {
-		return d.forwardRequest(c)
-	})
-
-	routeGroup.GET(RouteDashboardDatabaseSizes, func(c echo.Context) error {
-		return d.forwardRequest(c)
-	})
-
-	routeGroup.GET(RouteDashboardGossipMetrics, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 

@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/blake2b"
 
@@ -16,6 +14,7 @@ import (
 	hivedaemon "github.com/iotaledger/hive.go/daemon"
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/iotaledger/hive.go/websockethub"
+	"github.com/iotaledger/inx-app/httpserver"
 	"github.com/iotaledger/inx-app/nodebridge"
 	"github.com/iotaledger/inx-dashboard/pkg/daemon"
 	"github.com/iotaledger/inx-dashboard/pkg/jwt"
@@ -135,15 +134,8 @@ func (d *Dashboard) Init() {
 	d.metricsClient = NewMetricsClient(d.nodeClient)
 }
 
-func newEcho() *echo.Echo {
-	e := echo.New()
-	e.HideBanner = true
-	e.Use(middleware.Recover())
-	return e
-}
-
 func (d *Dashboard) Run() {
-	e := newEcho()
+	e := httpserver.NewEcho(d.Logger())
 	d.setupRoutes(e)
 
 	go func() {
