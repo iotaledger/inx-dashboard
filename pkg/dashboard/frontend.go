@@ -13,7 +13,7 @@ import (
 var frontendFiles embed.FS
 
 func distFileSystem() http.FileSystem {
-	f, err := fs.Sub(frontendFiles, "dist")
+	f, err := fs.Sub(frontendFiles, "frontend")
 	if err != nil {
 		panic(err)
 	}
