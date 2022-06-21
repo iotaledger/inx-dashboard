@@ -166,6 +166,9 @@ func (d *Dashboard) setupRoutes(e *echo.Echo) {
 	e.GET("/", func(c echo.Context) error {
 		return c.Redirect(http.StatusPermanentRedirect, "/dashboard/")
 	})
+	e.GET("/dashboard", func(c echo.Context) error {
+		return c.Redirect(http.StatusPermanentRedirect, "/dashboard/")
+	})
 
 	mw := frontendMiddleware()
 	if d.developerMode {
