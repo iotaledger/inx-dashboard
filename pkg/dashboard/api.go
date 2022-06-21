@@ -66,19 +66,20 @@ func (d *Dashboard) apiMiddlewares() []echo.MiddlewareFunc {
 	// the HTTP REST routes which can be called without authorization.
 	// Wildcards using * are allowed
 	publicRoutes := []string{
-		"/api/v2/info",
-		"/api/v2/blocks*",
-		"/api/v2/transactions*",
-		"/api/v2/milestones*",
-		"/api/v2/outputs*",
-		"/api/plugins/indexer/v1/*",
+		"/api/routes",
+		"/api/core/v2/info",
+		"/api/core/v2/blocks*",
+		"/api/core/v2/transactions*",
+		"/api/core/v2/milestones*",
+		"/api/core/v2/outputs*",
+		"/api/indexer/v1/*",
 	}
 
 	// the HTTP REST routes which need to be called with authorization.
 	// Wildcards using * are allowed
 	protectedRoutes := []string{
-		"/api/v2/peers*",
-		"/api/plugins/*",
+		"/api/core/v2/peers*",
+		"/api/*",
 	}
 
 	publicRoutesRegEx := compileRoutesAsRegexes(publicRoutes)
