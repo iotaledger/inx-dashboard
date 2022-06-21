@@ -12,16 +12,19 @@ import (
 )
 
 const (
+	FeatureCoreAPI          = "core/v2"
 	FeatureDashboardMetrics = "dashboard-metrics/v1"
 	FeatureIndexer          = "indexer/v1"
 	FeatureParticipation    = "participation/v1"
 	FeatureSpammer          = "spammer/v1"
 
-	APIRoute                    = "/api/v2"
-	PluginDashboardMetricsRoute = "/api/plugins/" + FeatureDashboardMetrics
-	PluginIndexerRoute          = "/api/plugins/" + FeatureIndexer
-	PluginParticipationRoute    = "/api/plugins/" + FeatureParticipation
-	PluginSpammerRoute          = "/api/plugins/" + FeatureSpammer
+	BasePath              = ""
+	APIBasePath           = "/api"
+	CoreAPIRoute          = BasePath + "/" + FeatureCoreAPI
+	DashboardMetricsRoute = APIBasePath + "/" + FeatureDashboardMetrics
+	IndexerRoute          = BasePath + "/" + FeatureIndexer
+	ParticipationRoute    = BasePath + "/" + FeatureParticipation
+	SpammerRoute          = BasePath + "/" + FeatureSpammer
 )
 
 const (
@@ -43,53 +46,57 @@ const (
 	// ParameterPeerID is used to identify a peer.
 	ParameterPeerID = "peerID"
 
-	// RouteInfo is the route for getting the node info.
+	// RouteRoutes is the route for getting the routes the node exposes.
+	// GET returns the routes.
+	RouteRoutes = BasePath + "/routes"
+
+	// RouteCoreInfo is the route for getting the node info.
 	// GET returns the node info.
-	RouteInfo = APIRoute + "/info"
+	RouteCoreInfo = CoreAPIRoute + "/info"
 
-	// RouteBlock is the route for getting a block by its blockID.
+	// RouteCoreBlock is the route for getting a block by its blockID.
 	// GET returns the block based on the given type in the request "Accept" header.
 	// MIMEApplicationJSON => json
 	// MIMEVendorIOTASerializer => bytes
-	RouteBlock = APIRoute + "/blocks/:" + ParameterBlockID
+	RouteCoreBlock = CoreAPIRoute + "/blocks/:" + ParameterBlockID
 
-	// RouteBlockMetadata is the route for getting block metadata by its blockID.
+	// RouteCoreBlockMetadata is the route for getting block metadata by its blockID.
 	// GET returns block metadata (including info about "promotion/reattachment needed").
-	RouteBlockMetadata = APIRoute + "/blocks/:" + ParameterBlockID + "/metadata"
+	RouteCoreBlockMetadata = CoreAPIRoute + "/blocks/:" + ParameterBlockID + "/metadata"
 
-	// RouteTransactionsIncludedBlock is the route for getting the block that was included in the ledger for a given transaction ID.
+	// RouteCoreTransactionsIncludedBlock is the route for getting the block that was included in the ledger for a given transaction ID.
 	// GET returns the block based on the given type in the request "Accept" header.
 	// MIMEApplicationJSON => json
 	// MIMEVendorIOTASerializer => bytes
-	RouteTransactionsIncludedBlock = APIRoute + "/transactions/:" + ParameterTransactionID + "/included-block"
+	RouteCoreTransactionsIncludedBlock = CoreAPIRoute + "/transactions/:" + ParameterTransactionID + "/included-block"
 
-	// RouteMilestoneByID is the route for getting a milestone by its ID.
+	// RouteCoreMilestoneByID is the route for getting a milestone by its ID.
 	// GET returns the milestone.
 	// MIMEApplicationJSON => json
 	// MIMEVendorIOTASerializer => bytes
-	RouteMilestoneByID = APIRoute + "/milestones/:" + ParameterMilestoneID
+	RouteCoreMilestoneByID = CoreAPIRoute + "/milestones/:" + ParameterMilestoneID
 
-	// RouteMilestoneByIndex is the route for getting a milestone by its milestoneIndex.
+	// RouteCoreMilestoneByIndex is the route for getting a milestone by its milestoneIndex.
 	// GET returns the milestone.
 	// MIMEApplicationJSON => json
 	// MIMEVendorIOTASerializer => bytes
-	RouteMilestoneByIndex = APIRoute + "/milestones/by-index/:" + ParameterMilestoneIndex
+	RouteCoreMilestoneByIndex = CoreAPIRoute + "/milestones/by-index/:" + ParameterMilestoneIndex
 
-	// RouteOutput is the route for getting an output by its outputID (transactionHash + outputIndex).
+	// RouteCoreOutput is the route for getting an output by its outputID (transactionHash + outputIndex).
 	// GET returns the output based on the given type in the request "Accept" header.
 	// MIMEApplicationJSON => json
 	// MIMEVendorIOTASerializer => bytes
-	RouteOutput = APIRoute + "/outputs/:" + ParameterOutputID
+	RouteCoreOutput = CoreAPIRoute + "/outputs/:" + ParameterOutputID
 
-	// RoutePeer is the route for getting peers by their peerID.
+	// RouteCorePeer is the route for getting peers by their peerID.
 	// GET returns the peer
 	// DELETE deletes the peer.
-	RoutePeer = APIRoute + "/peers/:" + ParameterPeerID
+	RouteCorePeer = CoreAPIRoute + "/peers/:" + ParameterPeerID
 
-	// RoutePeers is the route for getting all peers of the node.
+	// RouteCorePeers is the route for getting all peers of the node.
 	// GET returns a list of all peers.
 	// POST adds a new peer.
-	RoutePeers = APIRoute + "/peers"
+	RouteCorePeers = CoreAPIRoute + "/peers"
 )
 
 const (
@@ -102,60 +109,60 @@ const (
 	// ParameterNFTID is used to identify a nft by its ID.
 	ParameterNFTID = "nftID"
 
-	// RouteOutputsBasic is the route for getting basic outputs filtered by the given parameters.
+	// RouteIndexerOutputsBasic is the route for getting basic outputs filtered by the given parameters.
 	// GET with query parameter returns all outputIDs that fit these filter criteria.
 	// Query parameters: "address", "hasStorageReturnCondition", "storageReturnAddress", "hasExpirationCondition",
 	//					 "expiresBefore", "expiresAfter", "expiresBeforeMilestone", "expiresAfterMilestone",
 	//					 "hasTimelockCondition", "timelockedBefore", "timelockedAfter", "timelockedBeforeMilestone",
 	//					 "timelockedAfterMilestone", "sender", "tag", "createdBefore", "createdAfter"
 	// Returns an empty list if no results are found.
-	RouteOutputsBasic = PluginIndexerRoute + "/outputs/basic"
+	RouteIndexerOutputsBasic = IndexerRoute + "/outputs/basic"
 
-	// RouteOutputsAliases is the route for getting aliases filtered by the given parameters.
+	// RouteIndexerOutputsAliases is the route for getting aliases filtered by the given parameters.
 	// GET with query parameter returns all outputIDs that fit these filter criteria.
 	// Query parameters: "stateController", "governor", "issuer", "sender", "createdBefore", "createdAfter"
 	// Returns an empty list if no results are found.
-	RouteOutputsAliases = PluginIndexerRoute + "/outputs/alias"
+	RouteIndexerOutputsAliases = IndexerRoute + "/outputs/alias"
 
-	// RouteOutputsAliasByID is the route for getting aliases by their aliasID.
+	// RouteIndexerOutputsAliasByID is the route for getting aliases by their aliasID.
 	// GET returns the outputIDs or 404 if no record is found.
-	RouteOutputsAliasByID = PluginIndexerRoute + "/outputs/alias/:" + ParameterAliasID
+	RouteIndexerOutputsAliasByID = IndexerRoute + "/outputs/alias/:" + ParameterAliasID
 
-	// RouteOutputsNFTs is the route for getting NFT filtered by the given parameters.
+	// RouteIndexerOutputsNFTs is the route for getting NFT filtered by the given parameters.
 	// Query parameters: "address", "hasStorageReturnCondition", "storageReturnAddress", "hasExpirationCondition",
 	//					 "expiresBefore", "expiresAfter", "expiresBeforeMilestone", "expiresAfterMilestone",
 	//					 "hasTimelockCondition", "timelockedBefore", "timelockedAfter", "timelockedBeforeMilestone",
 	//					 "timelockedAfterMilestone", "issuer", "sender", "tag", "createdBefore", "createdAfter"
 	// Returns an empty list if no results are found.
-	RouteOutputsNFTs = PluginIndexerRoute + "/outputs/nft"
+	RouteIndexerOutputsNFTs = IndexerRoute + "/outputs/nft"
 
-	// RouteOutputsNFTByID is the route for getting NFT by their nftID.
+	// RouteIndexerOutputsNFTByID is the route for getting NFT by their nftID.
 	// GET returns the outputIDs or 404 if no record is found.
-	RouteOutputsNFTByID = PluginIndexerRoute + "/outputs/nft/:" + ParameterNFTID
+	RouteIndexerOutputsNFTByID = IndexerRoute + "/outputs/nft/:" + ParameterNFTID
 
-	// RouteOutputsFoundries is the route for getting foundries filtered by the given parameters.
+	// RouteIndexerOutputsFoundries is the route for getting foundries filtered by the given parameters.
 	// GET with query parameter returns all outputIDs that fit these filter criteria.
 	// Query parameters: "aliasAddress", "createdBefore", "createdAfter"
 	// Returns an empty list if no results are found.
-	RouteOutputsFoundries = PluginIndexerRoute + "/outputs/foundry"
+	RouteIndexerOutputsFoundries = IndexerRoute + "/outputs/foundry"
 
-	// RouteOutputsFoundryByID is the route for getting foundries by their foundryID.
+	// RouteIndexerOutputsFoundryByID is the route for getting foundries by their foundryID.
 	// GET returns the outputIDs or 404 if no record is found.
-	RouteOutputsFoundryByID = PluginIndexerRoute + "/outputs/foundry/:" + ParameterFoundryID
+	RouteIndexerOutputsFoundryByID = IndexerRoute + "/outputs/foundry/:" + ParameterFoundryID
 )
 
 const (
-	// RouteNodeInfoExtended is the route to get additional info about the node.
+	// RouteDashboardNodeInfoExtended is the route to get additional info about the node.
 	// GET returns the extended info of the node.
-	RouteNodeInfoExtended = PluginDashboardMetricsRoute + "/info"
+	RouteDashboardNodeInfoExtended = DashboardMetricsRoute + "/info"
 
-	// RouteDatabaseSizes is the route to get the size of the databases.
+	// RouteDashboardDatabaseSizes is the route to get the size of the databases.
 	// GET returns the sizes of the databases.
-	RouteDatabaseSizes = PluginDashboardMetricsRoute + "/database/sizes"
+	RouteDashboardDatabaseSizes = DashboardMetricsRoute + "/database/sizes"
 
-	// RouteGossipMetrics is the route to get metrics about gossip.
+	// RouteDashboardGossipMetrics is the route to get metrics about gossip.
 	// GET returns the gossip metrics.
-	RouteGossipMetrics = PluginDashboardMetricsRoute + "/gossip"
+	RouteDashboardGossipMetrics = DashboardMetricsRoute + "/gossip"
 )
 
 const (
@@ -164,110 +171,101 @@ const (
 
 	// RouteParticipationEvents is the route to list all events, returning their ID, the event name and status.
 	// GET returns a list of all events known to the node. Optional query parameter returns filters events by type (query parameters: "type").
-	RouteParticipationEvents = PluginParticipationRoute + "/events"
+	RouteParticipationEvents = ParticipationRoute + "/events"
 
 	// RouteParticipationEvent is the route to access a single participation by its ID.
 	// GET gives a quick overview of the participation. This does not include the current standings.
-	RouteParticipationEvent = PluginParticipationRoute + "/events/:" + ParameterParticipationEventID
+	RouteParticipationEvent = ParticipationRoute + "/events/:" + ParameterParticipationEventID
 
 	// RouteParticipationEventStatus is the route to access the status of a single participation by its ID.
 	// GET returns the amount of tokens participating and accumulated votes for the ballot if the event contains a ballot. Optional query parameter returns the status for the given milestone index (query parameters: "milestoneIndex").
-	RouteParticipationEventStatus = PluginParticipationRoute + "/events/:" + ParameterParticipationEventID + "/status"
+	RouteParticipationEventStatus = ParticipationRoute + "/events/:" + ParameterParticipationEventID + "/status"
 
-	// RouteAdminCreateEvent is the route the node operator can use to add events.
+	// RouteParticipationAdminCreateEvent is the route the node operator can use to add events.
 	// POST creates a new event to track
-	RouteAdminCreateEvent = PluginParticipationRoute + "/admin/events"
+	RouteParticipationAdminCreateEvent = ParticipationRoute + "/admin/events"
 
-	// RouteAdminDeleteEvent is the route the node operator can use to remove events.
+	// RouteParticipationAdminDeleteEvent is the route the node operator can use to remove events.
 	// DELETE removes a tracked participation.
-	RouteAdminDeleteEvent = PluginParticipationRoute + "/admin/events/:" + ParameterParticipationEventID
+	RouteParticipationAdminDeleteEvent = ParticipationRoute + "/admin/events/:" + ParameterParticipationEventID
 )
 
 const (
 	// RouteSpammerStatus is the route to get the status of the spammer.
 	// GET the current status of the spammer.
-	RouteSpammerStatus = PluginSpammerRoute + "/status"
+	RouteSpammerStatus = SpammerRoute + "/status"
 
 	// RouteSpammerStart is the route to start the spammer (with optional changing the settings).
 	// POST the settings to change and start the spammer.
-	RouteSpammerStart = PluginSpammerRoute + "/start"
+	RouteSpammerStart = SpammerRoute + "/start"
 
 	// RouteSpammerStop is the route to stop the spammer.
 	// POST to stop the spammer.
-	RouteSpammerStop = PluginSpammerRoute + "/stop"
+	RouteSpammerStop = SpammerRoute + "/stop"
 )
 
 func (d *Dashboard) setupAPIRoutes(routeGroup *echo.Group) error {
 
-	routeGroup.GET(RouteInfo, func(c echo.Context) error {
+	routeGroup.GET(RouteRoutes, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	routeGroup.GET(RouteBlockMetadata, func(c echo.Context) error {
+	routeGroup.GET(RouteCoreInfo, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	routeGroup.GET(RouteBlock, func(c echo.Context) error {
+	routeGroup.GET(RouteCoreBlockMetadata, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	routeGroup.GET(RouteTransactionsIncludedBlock, func(c echo.Context) error {
+	routeGroup.GET(RouteCoreBlock, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	routeGroup.GET(RouteMilestoneByID, func(c echo.Context) error {
+	routeGroup.GET(RouteCoreTransactionsIncludedBlock, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	routeGroup.GET(RouteMilestoneByIndex, func(c echo.Context) error {
+	routeGroup.GET(RouteCoreMilestoneByID, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	routeGroup.GET(RouteOutput, func(c echo.Context) error {
+	routeGroup.GET(RouteCoreMilestoneByIndex, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	routeGroup.DELETE(RoutePeer, func(c echo.Context) error {
+	routeGroup.GET(RouteCoreOutput, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	routeGroup.POST(RoutePeers, func(c echo.Context) error {
+	routeGroup.DELETE(RouteCorePeer, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	// dashboard metrics
-	routeGroup.GET(RouteNodeInfoExtended, func(c echo.Context) error {
-		return d.forwardRequest(c)
-	})
-
-	routeGroup.GET(RouteDatabaseSizes, func(c echo.Context) error {
-		return d.forwardRequest(c)
-	})
-
-	routeGroup.GET(RouteGossipMetrics, func(c echo.Context) error {
+	routeGroup.POST(RouteCorePeers, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
 	// indexer
-	routeGroup.GET(RouteOutputsBasic, func(c echo.Context) error {
+	routeGroup.GET(RouteIndexerOutputsBasic, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
-	routeGroup.GET(RouteOutputsAliases, func(c echo.Context) error {
+	routeGroup.GET(RouteIndexerOutputsAliases, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
-	routeGroup.GET(RouteOutputsAliasByID, func(c echo.Context) error {
+	routeGroup.GET(RouteIndexerOutputsAliasByID, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
-	routeGroup.GET(RouteOutputsNFTs, func(c echo.Context) error {
+	routeGroup.GET(RouteIndexerOutputsNFTs, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
-	routeGroup.GET(RouteOutputsNFTByID, func(c echo.Context) error {
+	routeGroup.GET(RouteIndexerOutputsNFTByID, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
-	routeGroup.GET(RouteOutputsFoundries, func(c echo.Context) error {
+	routeGroup.GET(RouteIndexerOutputsFoundries, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
-	routeGroup.GET(RouteOutputsFoundryByID, func(c echo.Context) error {
+	routeGroup.GET(RouteIndexerOutputsFoundryByID, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
@@ -284,11 +282,11 @@ func (d *Dashboard) setupAPIRoutes(routeGroup *echo.Group) error {
 		return d.forwardRequest(c)
 	})
 
-	routeGroup.POST(RouteAdminCreateEvent, func(c echo.Context) error {
+	routeGroup.POST(RouteParticipationAdminCreateEvent, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 
-	routeGroup.DELETE(RouteAdminDeleteEvent, func(c echo.Context) error {
+	routeGroup.DELETE(RouteParticipationAdminDeleteEvent, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 

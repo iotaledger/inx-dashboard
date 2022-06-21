@@ -19,7 +19,7 @@ type MetricsClient struct {
 
 func (client *MetricsClient) NodeInfoExtended(ctx context.Context) (*NodeInfoExtended, error) {
 	res := &NodeInfoExtended{}
-	if _, err := client.Do(ctx, http.MethodGet, RouteNodeInfoExtended, nil, res); err != nil {
+	if _, err := client.Do(ctx, http.MethodGet, RouteDashboardNodeInfoExtended, nil, res); err != nil {
 		return nil, err
 	}
 
@@ -28,7 +28,7 @@ func (client *MetricsClient) NodeInfoExtended(ctx context.Context) (*NodeInfoExt
 
 func (client *MetricsClient) DatabaseSizes(ctx context.Context) (*DatabaseSizesMetric, error) {
 	res := &DatabaseSizesMetric{}
-	if _, err := client.Do(ctx, http.MethodGet, RouteDatabaseSizes, nil, res); err != nil {
+	if _, err := client.Do(ctx, http.MethodGet, RouteDashboardDatabaseSizes, nil, res); err != nil {
 		return nil, err
 	}
 
@@ -37,7 +37,7 @@ func (client *MetricsClient) DatabaseSizes(ctx context.Context) (*DatabaseSizesM
 
 func (client *MetricsClient) GossipMetrics(ctx context.Context) (*GossipMetrics, error) {
 	res := &GossipMetrics{}
-	if _, err := client.Do(ctx, http.MethodGet, RouteGossipMetrics, nil, res); err != nil {
+	if _, err := client.Do(ctx, http.MethodGet, RouteDashboardGossipMetrics, nil, res); err != nil {
 		return nil, err
 	}
 

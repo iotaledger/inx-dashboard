@@ -5,9 +5,9 @@ go 1.18
 require (
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/iotaledger/hive.go v0.0.0-20220531132324-8347a155e220
-	github.com/iotaledger/inx-app v0.0.0-20220620113337-e692a283ab0d
+	github.com/iotaledger/inx-app v0.0.0-20220621164732-c057804cc1bc
 	github.com/iotaledger/inx/go v0.0.0-20220615123503-f64096762c65
-	github.com/iotaledger/iota.go/v3 v3.0.0-20220620112952-56012db9ef6a
+	github.com/iotaledger/iota.go/v3 v3.0.0-20220621150101-bba08736ee11
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.2
@@ -69,7 +69,7 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
-	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad // indirect
+	google.golang.org/genproto v0.0.0-20220621134657-43db42f103f7 // indirect
 	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
