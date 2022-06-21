@@ -18,12 +18,12 @@ const (
 	FeatureParticipation    = "participation/v1"
 	FeatureSpammer          = "spammer/v1"
 
-	BasePath              = "/api/"
-	CoreAPIRoute          = BasePath + FeatureCoreAPI
-	DashboardMetricsRoute = BasePath + FeatureDashboardMetrics
-	IndexerRoute          = BasePath + FeatureIndexer
-	ParticipationRoute    = BasePath + FeatureParticipation
-	SpammerRoute          = BasePath + FeatureSpammer
+	BasePath              = "/api"
+	CoreAPIRoute          = BasePath + "/" + FeatureCoreAPI
+	DashboardMetricsRoute = BasePath + "/" + FeatureDashboardMetrics
+	IndexerRoute          = BasePath + "/" + FeatureIndexer
+	ParticipationRoute    = BasePath + "/" + FeatureParticipation
+	SpammerRoute          = BasePath + "/" + FeatureSpammer
 )
 
 const (
