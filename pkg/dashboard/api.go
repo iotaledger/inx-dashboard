@@ -51,7 +51,7 @@ func (d *Dashboard) devModeReverseProxyMiddleware() echo.MiddlewareFunc {
 
 	apiURL, err := url.Parse(d.developerModeURL)
 	if err != nil {
-		d.LogFatalf("wrong devmode url: %s", err)
+		d.LogFatalfAndExit("wrong devmode url: %s", err)
 	}
 
 	return middleware.Proxy(middleware.NewRoundRobinBalancer([]*middleware.ProxyTarget{
