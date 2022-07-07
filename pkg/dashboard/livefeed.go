@@ -13,6 +13,11 @@ import (
 func (d *Dashboard) runNodeInfoFeed() {
 	if err := d.daemon.BackgroundWorker("NodeInfo Feed", func(ctx context.Context) {
 		ticker := timeutil.NewTicker(func() {
+			// skip if no client is connected
+			if d.hub.Clients() == 0 {
+				return
+			}
+
 			nodeInfo, err := d.getNodeInfo()
 			if err != nil {
 				d.LogWarnf("failed to get node info: %s", err)
@@ -32,6 +37,11 @@ func (d *Dashboard) runNodeInfoFeed() {
 func (d *Dashboard) runNodeInfoExtendedFeed() {
 	if err := d.daemon.BackgroundWorker("NodeInfoExtended Feed", func(ctx context.Context) {
 		ticker := timeutil.NewTicker(func() {
+			// skip if no client is connected
+			if d.hub.Clients() == 0 {
+				return
+			}
+
 			data, err := d.getNodeInfoExtended()
 			if err != nil {
 				d.LogWarnf("failed to get extended node info: %s", err)
@@ -64,6 +74,11 @@ func (d *Dashboard) runSyncStatusFeed() {
 func (d *Dashboard) runGossipMetricsFeed() {
 	if err := d.daemon.BackgroundWorker("GossipMetrics Feed", func(ctx context.Context) {
 		ticker := timeutil.NewTicker(func() {
+			// skip if no client is connected
+			if d.hub.Clients() == 0 {
+				return
+			}
+
 			data, err := d.getGossipMetrics()
 			if err != nil {
 				d.LogWarnf("failed to get gossip metrics: %s", err)
@@ -101,6 +116,11 @@ func (d *Dashboard) runPeerMetricsFeed() {
 
 	if err := d.daemon.BackgroundWorker("PeerMetrics Feed", func(ctx context.Context) {
 		ticker := timeutil.NewTicker(func() {
+			// skip if no client is connected
+			if d.hub.Clients() == 0 {
+				return
+			}
+
 			data, err := d.getPeerInfos()
 			if err != nil {
 				return
