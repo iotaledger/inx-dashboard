@@ -22,7 +22,7 @@ RUN go mod verify
 RUN go build -o /app/inx-dashboard -a
 
 # Copy the assets
-COPY ./config.json /app/config.json
+COPY ./config_defaults.json /app/config.json
 
 ############################
 # Image
