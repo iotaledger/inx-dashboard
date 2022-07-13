@@ -5,9 +5,9 @@ go 1.18
 require (
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/iotaledger/hive.go v0.0.0-20220713112541-3bfe06a592ed
-	github.com/iotaledger/inx-app v0.0.0-20220713113726-e61674a965b5
+	github.com/iotaledger/inx-app v0.0.0-20220713125444-cd0e2b9fb0c8
 	github.com/iotaledger/inx/go v0.0.0-20220705124918-775bb201b49e
-	github.com/iotaledger/iota.go/v3 v3.0.0-20220713111307-e56bfeff5451
+	github.com/iotaledger/iota.go/v3 v3.0.0-20220713125317-0f9382655ffc
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.2
