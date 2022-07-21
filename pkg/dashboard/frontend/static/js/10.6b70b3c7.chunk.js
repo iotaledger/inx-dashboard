@@ -1,0 +1,2 @@
+(this["webpackJsonpnode-dashboard"]=this["webpackJsonpnode-dashboard"]||[]).push([[10],{191:function(a,s,o){"use strict";o.r(s),s.default=o.p+"static/media/logo-navigation.49102444.svg"}}]);
+//# sourceMappingURL=10.6b70b3c7.chunk.js.map
