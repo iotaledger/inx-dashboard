@@ -33,6 +33,9 @@ type ParametersDashboard struct {
 		// Defines the private key used to sign the JWT tokens.
 		IdentityPrivateKey string `default:"" usage:"private key used to sign the JWT tokens (optional)"`
 	}
+
+	// whether the debug logging for requests should be enabled
+	DebugRequestLoggerEnabled bool `default:"false" usage:"whether the debug logging for requests should be enabled"`
 }
 
 var ParamsDashboard = &ParametersDashboard{}

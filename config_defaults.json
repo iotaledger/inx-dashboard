@@ -17,7 +17,8 @@
       "passwordSalt": "0000000000000000000000000000000000000000000000000000000000000000",
       "identityFilePath": "identity.key",
       "identityPrivateKey": ""
-    }
+    },
+    "debugRequestLoggerEnabled": false
   },
   "profiling": {
     "enabled": false,

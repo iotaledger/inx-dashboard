@@ -44,6 +44,7 @@ type Dashboard struct {
 	nodeBridge         *nodebridge.NodeBridge
 	tangleListener     *nodebridge.TangleListener
 	hub                *websockethub.Hub
+	debugLogRequests   bool
 
 	basicAuth     *basicauth.BasicAuth
 	jwtAuth       *jwt.JWTAuth
@@ -68,7 +69,8 @@ func New(
 	developerMode bool,
 	developerModeURL string,
 	nodeBridge *nodebridge.NodeBridge,
-	hub *websockethub.Hub) *Dashboard {
+	hub *websockethub.Hub,
+	debugLogRequests bool) *Dashboard {
 
 	return &Dashboard{
 		WrappedLogger:      logger.NewWrappedLogger(log),
@@ -84,6 +86,7 @@ func New(
 		developerModeURL:   developerModeURL,
 		nodeBridge:         nodeBridge,
 		hub:                hub,
+		debugLogRequests:   debugLogRequests,
 		visualizer:         NewVisualizer(VisualizerCapacity),
 	}
 }
@@ -135,7 +138,7 @@ func (d *Dashboard) Init() {
 }
 
 func (d *Dashboard) Run() {
-	e := httpserver.NewEcho(d.Logger())
+	e := httpserver.NewEcho(d.Logger(), nil, d.debugLogRequests)
 	d.setupRoutes(e)
 
 	go func() {
