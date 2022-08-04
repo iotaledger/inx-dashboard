@@ -65,12 +65,13 @@ Example:
 
 ## <a id="dashboard"></a> 3. Dashboard
 
-| Name                    | Description                                                  | Type    | Default value           |
-| ----------------------- | ------------------------------------------------------------ | ------- | ----------------------- |
-| bindAddress             | The bind address on which the dashboard can be accessed from | string  | "localhost:8081"        |
-| developerMode           | Whether to run the dashboard in dev mode                     | boolean | false                   |
-| developerModeURL        | The URL to use for dev mode                                  | string  | "http://127.0.0.1:9090" |
-| [auth](#dashboard_auth) | Configuration for auth                                       | object  |                         |
+| Name                      | Description                                                  | Type    | Default value           |
+| ------------------------- | ------------------------------------------------------------ | ------- | ----------------------- |
+| bindAddress               | The bind address on which the dashboard can be accessed from | string  | "localhost:8081"        |
+| developerMode             | Whether to run the dashboard in dev mode                     | boolean | false                   |
+| developerModeURL          | The URL to use for dev mode                                  | string  | "http://127.0.0.1:9090" |
+| [auth](#dashboard_auth)   | Configuration for auth                                       | object  |                         |
+| debugRequestLoggerEnabled | Whether the debug logging for requests should be enabled     | boolean | false                   |
 
 ### <a id="dashboard_auth"></a> Auth
 
@@ -98,7 +99,8 @@ Example:
         "passwordSalt": "0000000000000000000000000000000000000000000000000000000000000000",
         "identityFilePath": "identity.key",
         "identityPrivateKey": ""
-      }
+      },
+      "debugRequestLoggerEnabled": false
     }
   }
 ```

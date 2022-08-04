@@ -86,6 +86,7 @@ func provide(c *dig.Container) error {
 			ParamsDashboard.DeveloperModeURL,
 			deps.NodeBridge,
 			hub,
+			ParamsDashboard.DebugRequestLoggerEnabled,
 		)
 	}); err != nil {
 		return err
