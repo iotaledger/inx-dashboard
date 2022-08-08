@@ -10,7 +10,7 @@ require (
 	github.com/iotaledger/iota.go/v3 v3.0.0-beta.4
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.12.2
+	github.com/prometheus/client_golang v1.13.0
 	go.uber.org/dig v1.15.0
 )
 
