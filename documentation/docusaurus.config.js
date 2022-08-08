@@ -9,7 +9,7 @@ module.exports = {
                 path: path.resolve(__dirname, 'docs'),
                 routeBasePath: 'inx-dashboard',
                 sidebarPath: path.resolve(__dirname, 'sidebars.js'),
-                editUrl: 'https://github.com/gohornet/inx-indexer/edit/develop/documentation/docs',
+                editUrl: 'https://github.com/gohornet/inx-dashboard/edit/develop/documentation/docs',
                 versions: {
                     current: {
                         label: 'Develop',
