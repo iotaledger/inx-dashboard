@@ -22,10 +22,11 @@
 .dockerignore
 docker-compose.yml
 
-# dist packages
-dist/
+# Documentation
+documentation/
 
-# tools
+# Scripts + Tools
+scripts/
 tools/
 
 # OSX related files
@@ -34,5 +35,5 @@ tools/
 # Dashboard Submodule
 node-dashboard/
 
-# executable
+# Executable
 /inx-dashboard
