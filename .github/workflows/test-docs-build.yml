@@ -1,0 +1,29 @@
+name: Test Docs Build
+
+on:
+  pull_request:
+    branches:
+      - develop
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'yarn'
+          cache-dependency-path: documentation/yarn.lock
+      - name: Allow modern Yarn
+        run: |
+          corepack enable
+      - name: Test Build
+        working-directory: documentation
+        run: |
+          yarn install --immutable
+          yarn build
