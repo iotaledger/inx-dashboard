@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/iotaledger/hive.go/app"
-	"github.com/iotaledger/hive.go/app/utils/config"
+	"github.com/iotaledger/hive.go/apputils/config"
+	"github.com/iotaledger/hive.go/core/app"
 
 	dashboardApp "github.com/iotaledger/inx-dashboard/core/app"
 )

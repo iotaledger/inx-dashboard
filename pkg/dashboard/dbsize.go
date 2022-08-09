@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/iotaledger/hive.go/timeutil"
+	"github.com/iotaledger/hive.go/core/timeutil"
 	"github.com/iotaledger/inx-dashboard/pkg/daemon"
 )
 

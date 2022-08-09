@@ -6,7 +6,7 @@ import (
 
 	"github.com/iancoleman/orderedmap"
 
-	"github.com/iotaledger/hive.go/events"
+	"github.com/iotaledger/hive.go/core/events"
 	"github.com/iotaledger/inx-app/nodebridge"
 	"github.com/iotaledger/inx-dashboard/pkg/daemon"
 	inx "github.com/iotaledger/inx/go"
@@ -253,15 +253,15 @@ func (d *Dashboard) runVisualizerFeed() {
 		ctxWithCancel, cancel := context.WithCancel(ctx)
 		defer cancel()
 
-		d.visualizer.Events.VertexCreated.Attach(onVisualizerVertexCreated)
+		d.visualizer.Events.VertexCreated.Hook(onVisualizerVertexCreated)
 		defer d.visualizer.Events.VertexCreated.Detach(onVisualizerVertexCreated)
-		d.visualizer.Events.VertexSolidUpdated.Attach(onVisualizerVertexSolidUpdated)
+		d.visualizer.Events.VertexSolidUpdated.Hook(onVisualizerVertexSolidUpdated)
 		defer d.visualizer.Events.VertexSolidUpdated.Detach(onVisualizerVertexSolidUpdated)
-		d.visualizer.Events.VertexTipUpdated.Attach(onVisualizerVertexTipUpdated)
+		d.visualizer.Events.VertexTipUpdated.Hook(onVisualizerVertexTipUpdated)
 		defer d.visualizer.Events.VertexTipUpdated.Detach(onVisualizerVertexTipUpdated)
-		d.visualizer.Events.Confirmation.Attach(onVisualizerConfirmation)
+		d.visualizer.Events.Confirmation.Hook(onVisualizerConfirmation)
 		defer d.visualizer.Events.Confirmation.Detach(onVisualizerConfirmation)
-		d.tangleListener.Events.BlockSolid.Attach(onBlockSolid)
+		d.tangleListener.Events.BlockSolid.Hook(onBlockSolid)
 		defer d.tangleListener.Events.BlockSolid.Detach(onBlockSolid)
 
 		go func() {
@@ -293,7 +293,7 @@ func (d *Dashboard) runVisualizerFeed() {
 
 			d.visualizer.AddConfirmation(ms.Milestone.Parents, conflictingBlocks)
 		})
-		d.nodeBridge.Events.ConfirmedMilestoneChanged.Attach(onConfirmedMilestoneChanged)
+		d.nodeBridge.Events.ConfirmedMilestoneChanged.Hook(onConfirmedMilestoneChanged)
 		defer d.nodeBridge.Events.ConfirmedMilestoneChanged.Detach(onConfirmedMilestoneChanged)
 
 		<-ctx.Done()

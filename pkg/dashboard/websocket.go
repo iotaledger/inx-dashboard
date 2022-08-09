@@ -3,8 +3,8 @@ package dashboard
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/iotaledger/hive.go/syncutils"
-	"github.com/iotaledger/hive.go/websockethub"
+	"github.com/iotaledger/hive.go/core/syncutils"
+	"github.com/iotaledger/hive.go/core/websockethub"
 	"github.com/iotaledger/inx-dashboard/pkg/jwt"
 )
 

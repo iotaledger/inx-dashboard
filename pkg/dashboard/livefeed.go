@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/iotaledger/hive.go/events"
-	"github.com/iotaledger/hive.go/timeutil"
+	"github.com/iotaledger/hive.go/core/events"
+	"github.com/iotaledger/hive.go/core/timeutil"
 	"github.com/iotaledger/inx-app/nodebridge"
 	"github.com/iotaledger/inx-dashboard/pkg/daemon"
 )
@@ -61,9 +61,9 @@ func (d *Dashboard) runSyncStatusFeed() {
 	})
 
 	if err := d.daemon.BackgroundWorker("SyncStatus Feed", func(ctx context.Context) {
-		d.nodeBridge.Events.LatestMilestoneChanged.Attach(onMilestoneIndexChanged)
+		d.nodeBridge.Events.LatestMilestoneChanged.Hook(onMilestoneIndexChanged)
 		defer d.nodeBridge.Events.LatestMilestoneChanged.Detach(onMilestoneIndexChanged)
-		d.nodeBridge.Events.ConfirmedMilestoneChanged.Attach(onMilestoneIndexChanged)
+		d.nodeBridge.Events.ConfirmedMilestoneChanged.Hook(onMilestoneIndexChanged)
 		defer d.nodeBridge.Events.ConfirmedMilestoneChanged.Detach(onMilestoneIndexChanged)
 		<-ctx.Done()
 	}, daemon.PriorityStopDashboard); err != nil {
@@ -104,7 +104,7 @@ func (d *Dashboard) runMilestoneLiveFeed() {
 	})
 
 	if err := d.daemon.BackgroundWorker("Milestones Feed", func(ctx context.Context) {
-		d.nodeBridge.Events.LatestMilestoneChanged.Attach(onLatestMilestoneIndexChanged)
+		d.nodeBridge.Events.LatestMilestoneChanged.Hook(onLatestMilestoneIndexChanged)
 		defer d.nodeBridge.Events.LatestMilestoneChanged.Detach(onLatestMilestoneIndexChanged)
 		<-ctx.Done()
 	}, daemon.PriorityStopDashboard); err != nil {
