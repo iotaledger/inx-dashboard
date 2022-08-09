@@ -11,8 +11,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	hivecrypto "github.com/iotaledger/hive.go/crypto"
-	"github.com/iotaledger/hive.go/ioutils"
+	hivecrypto "github.com/iotaledger/hive.go/core/crypto"
+	"github.com/iotaledger/hive.go/core/ioutils"
 )
 
 var (

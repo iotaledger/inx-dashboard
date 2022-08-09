@@ -7,8 +7,8 @@ import (
 	"github.com/gorilla/websocket"
 	"go.uber.org/dig"
 
-	"github.com/iotaledger/hive.go/app"
-	"github.com/iotaledger/hive.go/websockethub"
+	"github.com/iotaledger/hive.go/core/app"
+	"github.com/iotaledger/hive.go/core/websockethub"
 	"github.com/iotaledger/inx-app/nodebridge"
 	"github.com/iotaledger/inx-dashboard/pkg/dashboard"
 )

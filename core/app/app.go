@@ -1,9 +1,9 @@
 package app
 
 import (
-	"github.com/iotaledger/hive.go/app"
-	"github.com/iotaledger/hive.go/app/core/shutdown"
-	"github.com/iotaledger/hive.go/app/plugins/profiling"
+	"github.com/iotaledger/hive.go/core/app"
+	"github.com/iotaledger/hive.go/core/app/core/shutdown"
+	"github.com/iotaledger/hive.go/core/app/plugins/profiling"
 	"github.com/iotaledger/inx-app/inx"
 	"github.com/iotaledger/inx-dashboard/core/dashboard"
 	"github.com/iotaledger/inx-dashboard/plugins/prometheus"
@@ -14,7 +14,7 @@ var (
 	Name = "inx-dashboard"
 
 	// Version of the app.
-	Version = "1.0.0-beta.4"
+	Version = "1.0.0-beta.5"
 )
 
 func App() *app.App {
