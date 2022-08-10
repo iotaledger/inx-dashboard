@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/iancoleman/orderedmap v0.2.0
-	github.com/iotaledger/hive.go/core v1.0.0-beta.1
-	github.com/iotaledger/inx-app v1.0.0-beta.7
+	github.com/iotaledger/hive.go/core v1.0.0-beta.2
+	github.com/iotaledger/inx-app v1.0.0-beta.6
 	github.com/iotaledger/inx/go v1.0.0-beta.5
 	github.com/iotaledger/iota.go/v3 v3.0.0-beta.6
 	github.com/labstack/echo/v4 v4.7.2
@@ -20,6 +20,7 @@ require (
 	github.com/cockroachdb/redact v1.1.3 // indirect
 	github.com/getsentry/sentry-go v0.13.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/iotaledger/hive.go v0.0.0-20220714075325-11202fe498d6 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mr-tron/base58 v1.2.0 // indirect
