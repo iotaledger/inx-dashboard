@@ -58,6 +58,7 @@ func NewVisualizer(capacity int) *Visualizer {
 
 func (v *Visualizer) removeOldEntries() {
 	// remove old entries
+	//nolint:ifshort // false positive
 	keys := v.vertices.Keys()
 	if len(keys) >= v.capacity {
 		v.vertices.Delete(keys[0])
@@ -146,6 +147,7 @@ func (v *Visualizer) setIsReferencedByOthers(blockID iotago.BlockID) {
 	vertex, exists := v.getEntry(blockID)
 	vertex.isReferencedByOthers = true
 
+	//nolint:ifshort // false positive
 	isTip := vertex.IsTip
 	vertex.IsTip = false
 
