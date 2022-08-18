@@ -32,6 +32,7 @@ func compileRouteAsRegex(route string) *regexp.Regexp {
 	if err != nil {
 		return nil
 	}
+
 	return reg
 }
 
@@ -44,6 +45,7 @@ func compileRoutesAsRegexes(routes []string) []*regexp.Regexp {
 		}
 		regexes = append(regexes, reg)
 	}
+
 	return regexes
 }
 
@@ -93,6 +95,7 @@ func (d *Dashboard) apiMiddlewares() []echo.MiddlewareFunc {
 				return true
 			}
 		}
+
 		return false
 	}
 
@@ -104,6 +107,7 @@ func (d *Dashboard) apiMiddlewares() []echo.MiddlewareFunc {
 				return true
 			}
 		}
+
 		return false
 	}
 
@@ -116,6 +120,7 @@ func (d *Dashboard) apiMiddlewares() []echo.MiddlewareFunc {
 		if d.authUserName == "" {
 			return false
 		}
+
 		return claims.VerifySubject(d.authUserName)
 	}
 

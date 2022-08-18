@@ -26,18 +26,21 @@ func getPublicNodeStatusByNodeInfo(nodeInfo *nodeclient.InfoResponse, isAlmostSy
 func (d *Dashboard) getNodeInfo() (*nodeclient.InfoResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), nodeTimeout)
 	defer cancel()
+
 	return d.nodeClient.Info(ctx)
 }
 
 func (d *Dashboard) getNodeInfoExtended() (*NodeInfoExtended, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), nodeTimeout)
 	defer cancel()
+
 	return d.metricsClient.NodeInfoExtended(ctx)
 }
 
 func (d *Dashboard) getPeerInfos() ([]*nodeclient.PeerResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), nodeTimeout)
 	defer cancel()
+
 	return d.nodeClient.Peers(ctx)
 }
 
@@ -51,12 +54,14 @@ func (d *Dashboard) getSyncStatus() *SyncStatus {
 func (d *Dashboard) getGossipMetrics() (*GossipMetrics, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), nodeTimeout)
 	defer cancel()
+
 	return d.metricsClient.GossipMetrics(ctx)
 }
 
 func (d *Dashboard) getDatabaseSizeMetric() (*DatabaseSizesMetric, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), nodeTimeout)
 	defer cancel()
+
 	return d.metricsClient.DatabaseSizes(ctx)
 }
 

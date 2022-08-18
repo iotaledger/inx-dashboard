@@ -164,5 +164,6 @@ func (j *JWTAuth) VerifyJWT(token string, allow func(claims *AuthClaims) bool) b
 
 		return true
 	}
+
 	return false
 }

@@ -312,6 +312,7 @@ func readAndCloseRequestBody(res *http.Request) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to read response body: %w", err)
 	}
+
 	return resBody, nil
 }
 
@@ -321,6 +322,7 @@ func readAndCloseResponseBody(res *http.Response) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to read response body: %w", err)
 	}
+
 	return resBody, nil
 }
 
@@ -339,6 +341,7 @@ func (d *Dashboard) forwardRequest(c echo.Context) error {
 		if reqBody == nil {
 			return nil
 		}
+
 		return bytes.NewReader(reqBody)
 	}())
 	if err != nil {

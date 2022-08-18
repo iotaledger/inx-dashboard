@@ -130,6 +130,7 @@ func LoadOrCreateIdentityPrivateKey(identityFilePath string, identityPrivKey str
 		if err := WriteEd25519PrivateKeyToPEMFile(identityFilePath, privKey); err != nil {
 			return nil, false, fmt.Errorf("unable to store private key file for identity: %w", err)
 		}
+
 		return privKey, true, nil
 
 	default:

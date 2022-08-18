@@ -72,6 +72,7 @@ func provide(c *dig.Container) error {
 		hub := websockethub.NewHub(CoreComponent.Logger(), upgrader, broadcastQueueSize, clientSendChannelSize, maxWebsocketMessageSize)
 
 		CoreComponent.LogInfo("Setting up dashboard...")
+
 		return dashboard.New(
 			CoreComponent.Logger(),
 			CoreComponent.Daemon(),
@@ -97,10 +98,12 @@ func provide(c *dig.Container) error {
 
 func configure() error {
 	deps.Dashboard.Init()
+
 	return nil
 }
 
 func run() error {
 	deps.Dashboard.Run()
+
 	return nil
 }

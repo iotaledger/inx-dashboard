@@ -80,6 +80,7 @@ func (v *Visualizer) getEntry(blockID iotago.BlockID) (*VisualizerVertex, bool) 
 		v.vertices.Set(id, vertex)
 		v.removeOldEntries()
 	}
+
 	return vertex, exists
 }
 

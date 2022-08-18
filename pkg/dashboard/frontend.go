@@ -17,6 +17,7 @@ func distFileSystem() http.FileSystem {
 	if err != nil {
 		panic(err)
 	}
+
 	return http.FS(f)
 }
 
@@ -43,6 +44,7 @@ func calculateMimeType(e echo.Context) string {
 
 func frontendMiddleware() echo.MiddlewareFunc {
 	fs := distFileSystem()
+
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (err error) {
 			contentType := calculateMimeType(c)
@@ -63,6 +65,7 @@ func frontendMiddleware() echo.MiddlewareFunc {
 					return next(c)
 				}
 			}
+
 			return c.Stream(http.StatusOK, contentType, staticBlob)
 		}
 	}
