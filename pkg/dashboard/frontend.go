@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+//nolint:typecheck // the linter can't find the files in the git submodule
 //go:embed frontend
 var frontendFiles embed.FS
 
