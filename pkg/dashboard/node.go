@@ -11,10 +11,6 @@ const (
 	nodeTimeout = 5 * time.Second
 )
 
-func (d *Dashboard) getIsNodeAlmostSynced() bool {
-	return d.nodeBridge.IsNodeAlmostSynced()
-}
-
 func getPublicNodeStatusByNodeInfo(nodeInfo *nodeclient.InfoResponse, isAlmostSynced bool) *PublicNodeStatus {
 	return &PublicNodeStatus{
 		PruningIndex: nodeInfo.Status.PruningIndex,
