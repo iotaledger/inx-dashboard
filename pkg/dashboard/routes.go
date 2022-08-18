@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -308,7 +307,7 @@ func (d *Dashboard) setupAPIRoutes(routeGroup *echo.Group) error {
 
 func readAndCloseRequestBody(res *http.Request) ([]byte, error) {
 	defer res.Body.Close()
-	resBody, err := ioutil.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read response body: %w", err)
 	}
@@ -318,7 +317,7 @@ func readAndCloseRequestBody(res *http.Request) ([]byte, error) {
 
 func readAndCloseResponseBody(res *http.Response) ([]byte, error) {
 	defer res.Body.Close()
-	resBody, err := ioutil.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read response body: %w", err)
 	}
