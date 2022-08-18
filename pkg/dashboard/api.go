@@ -111,7 +111,7 @@ func (d *Dashboard) apiMiddlewares() []echo.MiddlewareFunc {
 		return false
 	}
 
-	// Skip routes explicitely matching the publicRoutes, or not matching the protectedRoutes
+	// Skip routes explicitly matching the publicRoutes, or not matching the protectedRoutes
 	jwtAuthSkipper := func(c echo.Context) bool {
 		return matchPublic(c) || !matchProtected(c)
 	}

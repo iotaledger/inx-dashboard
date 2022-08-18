@@ -282,11 +282,11 @@ func (d *Dashboard) runVisualizerFeed() {
 			if err := d.nodeBridge.MilestoneConeMetadata(ctx, cancel, ms.Milestone.Index, func(metadata *inx.BlockMetadata) {
 				blockMeta := blockMetadataFromINXBlockMetadata(metadata)
 
-				d.visualizer.SetIsReferenced(blockMeta.BlockId)
+				d.visualizer.SetIsReferenced(blockMeta.BlockID)
 
 				if blockMeta.IsConflicting {
-					d.visualizer.SetIsConflicting(blockMeta.BlockId)
-					conflictingBlocks = append(conflictingBlocks, blockMeta.BlockId)
+					d.visualizer.SetIsConflicting(blockMeta.BlockID)
+					conflictingBlocks = append(conflictingBlocks, blockMeta.BlockID)
 				}
 			}); err != nil {
 				d.LogWarnf("failed to get milestone cone metadata: %v", err)

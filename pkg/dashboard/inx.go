@@ -6,7 +6,7 @@ import (
 )
 
 type BlockMetadata struct {
-	BlockId        iotago.BlockID
+	BlockID        iotago.BlockID
 	Parents        iotago.BlockIDs
 	IsSolid        bool
 	IsReferenced   bool
@@ -17,7 +17,7 @@ type BlockMetadata struct {
 
 func blockMetadataFromINXBlockMetadata(metadata *inx.BlockMetadata) *BlockMetadata {
 	return &BlockMetadata{
-		BlockId:        metadata.UnwrapBlockID(),
+		BlockID:        metadata.UnwrapBlockID(),
 		Parents:        metadata.UnwrapParents(),
 		IsSolid:        metadata.GetSolid(),
 		IsReferenced:   metadata.GetReferencedByMilestoneIndex() != 0,

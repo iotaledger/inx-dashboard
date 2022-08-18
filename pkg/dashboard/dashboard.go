@@ -47,7 +47,7 @@ type Dashboard struct {
 	debugLogRequests   bool
 
 	basicAuth     *basicauth.BasicAuth
-	jwtAuth       *jwt.JWTAuth
+	jwtAuth       *jwt.Auth
 	nodeClient    *nodeclient.Client
 	metricsClient *MetricsClient
 
@@ -121,7 +121,7 @@ func (d *Dashboard) Init() {
 	hashedPubKey := blake2b.Sum256(pubKey[:])
 	identity := hex.EncodeToString(hashedPubKey[:])
 
-	jwtAuth, err := jwt.NewJWTAuth(
+	jwtAuth, err := jwt.NewAuth(
 		d.authUserName,
 		d.authSessionTimeout,
 		identity,
