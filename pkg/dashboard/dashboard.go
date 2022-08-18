@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -117,7 +118,11 @@ func (d *Dashboard) Init() {
 		d.LogInfof(`loaded existing private key for identity from "%s"`, d.identityFilePath)
 	}
 
-	pubKey := privKey.Public().(ed25519.PublicKey)
+	pubKey, ok := privKey.Public().(ed25519.PublicKey)
+	if !ok {
+		panic(fmt.Sprintf("expected ed25519.PublicKey, got %T", privKey.Public()))
+	}
+
 	hashedPubKey := blake2b.Sum256(pubKey[:])
 	identity := hex.EncodeToString(hashedPubKey[:])
 

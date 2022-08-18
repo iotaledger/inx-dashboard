@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/iancoleman/orderedmap"
@@ -18,10 +19,12 @@ const (
 )
 
 func VertexCaller(handler interface{}, params ...interface{}) {
+	//nolint:forcetypeassert // we will replace that with generic events anyway
 	handler.(func(*VisualizerVertex))(params[0].(*VisualizerVertex))
 }
 
 func ConfirmationCaller(handler interface{}, params ...interface{}) {
+	//nolint:forcetypeassert // we will replace that with generic events anyway
 	handler.(func(milestoneParents []string, excludedIDs []string))(params[0].([]string), params[1].([]string))
 }
 
@@ -74,7 +77,11 @@ func (v *Visualizer) getEntry(blockID iotago.BlockID) (*VisualizerVertex, bool) 
 	var vertex *VisualizerVertex
 	vert, exists := v.vertices.Get(id)
 	if exists {
-		vertex = vert.(*VisualizerVertex)
+		var ok bool
+		vertex, ok = vert.(*VisualizerVertex)
+		if !ok {
+			panic(fmt.Sprintf("expected *VisualizerVertex, got %T", vert))
+		}
 	} else {
 		vertex = newVertex(blockID)
 		v.vertices.Set(id, vertex)
@@ -181,7 +188,11 @@ func (v *Visualizer) ForEachCreated(consumer func(vertex *VisualizerVertex) bool
 			continue
 		}
 
-		vertex := v.(*VisualizerVertex)
+		vertex, ok := v.(*VisualizerVertex)
+		if !ok {
+			panic(fmt.Sprintf("expected *VisualizerVertex, got %T", v))
+		}
+
 		if vertex.isCreated {
 			if !consumer(vertex) {
 				break
