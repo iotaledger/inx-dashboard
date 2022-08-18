@@ -25,8 +25,8 @@ const (
 func compileRouteAsRegex(route string) *regexp.Regexp {
 
 	r := regexp.QuoteMeta(route)
-	r = strings.Replace(r, `\*`, "(.*?)", -1)
-	r = r + "$"
+	r = strings.ReplaceAll(r, `\*`, "(.*?)")
+	r += "$"
 
 	reg, err := regexp.Compile(r)
 	if err != nil {
