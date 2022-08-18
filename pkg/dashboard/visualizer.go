@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/iancoleman/orderedmap"
@@ -18,10 +19,12 @@ const (
 )
 
 func VertexCaller(handler interface{}, params ...interface{}) {
+	//nolint:forcetypeassert // we will replace that with generic events anyway
 	handler.(func(*VisualizerVertex))(params[0].(*VisualizerVertex))
 }
 
 func ConfirmationCaller(handler interface{}, params ...interface{}) {
+	//nolint:forcetypeassert // we will replace that with generic events anyway
 	handler.(func(milestoneParents []string, excludedIDs []string))(params[0].([]string), params[1].([]string))
 }
 
@@ -55,6 +58,7 @@ func NewVisualizer(capacity int) *Visualizer {
 
 func (v *Visualizer) removeOldEntries() {
 	// remove old entries
+	//nolint:ifshort // false positive
 	keys := v.vertices.Keys()
 	if len(keys) >= v.capacity {
 		v.vertices.Delete(keys[0])
@@ -74,12 +78,17 @@ func (v *Visualizer) getEntry(blockID iotago.BlockID) (*VisualizerVertex, bool) 
 	var vertex *VisualizerVertex
 	vert, exists := v.vertices.Get(id)
 	if exists {
-		vertex = vert.(*VisualizerVertex)
+		var ok bool
+		vertex, ok = vert.(*VisualizerVertex)
+		if !ok {
+			panic(fmt.Sprintf("expected *VisualizerVertex, got %T", vert))
+		}
 	} else {
 		vertex = newVertex(blockID)
 		v.vertices.Set(id, vertex)
 		v.removeOldEntries()
 	}
+
 	return vertex, exists
 }
 
@@ -138,6 +147,7 @@ func (v *Visualizer) setIsReferencedByOthers(blockID iotago.BlockID) {
 	vertex, exists := v.getEntry(blockID)
 	vertex.isReferencedByOthers = true
 
+	//nolint:ifshort // false positive
 	isTip := vertex.IsTip
 	vertex.IsTip = false
 
@@ -180,7 +190,11 @@ func (v *Visualizer) ForEachCreated(consumer func(vertex *VisualizerVertex) bool
 			continue
 		}
 
-		vertex := v.(*VisualizerVertex)
+		vertex, ok := v.(*VisualizerVertex)
+		if !ok {
+			panic(fmt.Sprintf("expected *VisualizerVertex, got %T", v))
+		}
+
 		if vertex.isCreated {
 			if !consumer(vertex) {
 				break
@@ -281,11 +295,11 @@ func (d *Dashboard) runVisualizerFeed() {
 			if err := d.nodeBridge.MilestoneConeMetadata(ctx, cancel, ms.Milestone.Index, func(metadata *inx.BlockMetadata) {
 				blockMeta := blockMetadataFromINXBlockMetadata(metadata)
 
-				d.visualizer.SetIsReferenced(blockMeta.BlockId)
+				d.visualizer.SetIsReferenced(blockMeta.BlockID)
 
 				if blockMeta.IsConflicting {
-					d.visualizer.SetIsConflicting(blockMeta.BlockId)
-					conflictingBlocks = append(conflictingBlocks, blockMeta.BlockId)
+					d.visualizer.SetIsConflicting(blockMeta.BlockID)
+					conflictingBlocks = append(conflictingBlocks, blockMeta.BlockID)
 				}
 			}); err != nil {
 				d.LogWarnf("failed to get milestone cone metadata: %v", err)

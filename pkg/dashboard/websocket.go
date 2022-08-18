@@ -63,6 +63,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 				return false
 			}
 		}
+
 		return true
 	}
 
@@ -83,6 +84,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 			nodeInfo, err := d.getNodeInfo()
 			if err != nil {
 				d.LogWarnf("failed to get node info: %s", err)
+
 				return
 			}
 
@@ -93,6 +95,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 			data, err := d.getNodeInfoExtended()
 			if err != nil {
 				d.LogWarnf("failed to get extended node info: %s", err)
+
 				return
 			}
 			client.Send(&Msg{Type: MsgTypeNodeInfoExtended, Data: data})
@@ -101,6 +104,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 			data, err := d.getGossipMetrics()
 			if err != nil {
 				d.LogWarnf("failed to get gossip metrics: %s", err)
+
 				return
 			}
 			client.Send(&Msg{Type: MsgTypeGossipMetrics, Data: data})
@@ -112,6 +116,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 					client.Send(&Msg{Type: MsgTypeMilestone, Data: &Milestone{MilestoneID: milestoneIDHex, Index: msIndex}})
 				} else {
 					d.LogWarnf("failed to get milestone %d: %s", msIndex, err)
+
 					return
 				}
 			}
@@ -120,6 +125,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 			data, err := d.getPeerInfos()
 			if err != nil {
 				d.LogWarnf("failed to get peer infos: %s", err)
+
 				return
 			}
 			client.Send(&Msg{Type: MsgTypePeerMetric, Data: data})
@@ -128,6 +134,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 			data, err := d.getNodeInfo()
 			if err != nil {
 				d.LogWarnf("failed to get node info: %s", err)
+
 				return
 			}
 			client.Send(&Msg{Type: MsgTypeConfirmedMsMetrics, Data: data.Metrics})
@@ -136,6 +143,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 			d.visualizer.ForEachCreated(func(vertex *VisualizerVertex) bool {
 				// don't drop the messages to fill the visualizer without missing any vertex
 				client.Send(&Msg{Type: MsgTypeVisualizerVertex, Data: vertex}, true)
+
 				return true
 			}, VisualizerInitValuesCount)
 
@@ -160,6 +168,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 				topicsLock.RLock()
 				_, registered := registeredTopics[msg.Type]
 				topicsLock.RUnlock()
+
 				return registered
 			}
 			client.ReceiveChan = make(chan *websockethub.WebsocketMsg, 100)

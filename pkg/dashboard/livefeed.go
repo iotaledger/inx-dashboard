@@ -21,6 +21,7 @@ func (d *Dashboard) runNodeInfoFeed() {
 			nodeInfo, err := d.getNodeInfo()
 			if err != nil {
 				d.LogWarnf("failed to get node info: %s", err)
+
 				return
 			}
 
@@ -45,6 +46,7 @@ func (d *Dashboard) runNodeInfoExtendedFeed() {
 			data, err := d.getNodeInfoExtended()
 			if err != nil {
 				d.LogWarnf("failed to get extended node info: %s", err)
+
 				return
 			}
 			d.hub.BroadcastMsg(&Msg{Type: MsgTypeNodeInfoExtended, Data: data})
@@ -82,6 +84,7 @@ func (d *Dashboard) runGossipMetricsFeed() {
 			data, err := d.getGossipMetrics()
 			if err != nil {
 				d.LogWarnf("failed to get gossip metrics: %s", err)
+
 				return
 			}
 			d.hub.BroadcastMsg(&Msg{Type: MsgTypeGossipMetrics, Data: data})

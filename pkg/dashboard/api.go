@@ -25,25 +25,27 @@ const (
 func compileRouteAsRegex(route string) *regexp.Regexp {
 
 	r := regexp.QuoteMeta(route)
-	r = strings.Replace(r, `\*`, "(.*?)", -1)
-	r = r + "$"
+	r = strings.ReplaceAll(r, `\*`, "(.*?)")
+	r += "$"
 
 	reg, err := regexp.Compile(r)
 	if err != nil {
 		return nil
 	}
+
 	return reg
 }
 
 func compileRoutesAsRegexes(routes []string) []*regexp.Regexp {
-	var regexes []*regexp.Regexp
-	for _, route := range routes {
+	regexes := make([]*regexp.Regexp, len(routes))
+	for i, route := range routes {
 		reg := compileRouteAsRegex(route)
 		if reg == nil {
-			panic(fmt.Sprintf("Invalid route in config: %s", route))
+			panic(fmt.Sprintf("invalid route in config: %s", route))
 		}
-		regexes = append(regexes, reg)
+		regexes[i] = reg
 	}
+
 	return regexes
 }
 
@@ -93,6 +95,7 @@ func (d *Dashboard) apiMiddlewares() []echo.MiddlewareFunc {
 				return true
 			}
 		}
+
 		return false
 	}
 
@@ -104,10 +107,11 @@ func (d *Dashboard) apiMiddlewares() []echo.MiddlewareFunc {
 				return true
 			}
 		}
+
 		return false
 	}
 
-	// Skip routes explicitely matching the publicRoutes, or not matching the protectedRoutes
+	// Skip routes explicitly matching the publicRoutes, or not matching the protectedRoutes
 	jwtAuthSkipper := func(c echo.Context) bool {
 		return matchPublic(c) || !matchProtected(c)
 	}
@@ -116,6 +120,7 @@ func (d *Dashboard) apiMiddlewares() []echo.MiddlewareFunc {
 		if d.authUserName == "" {
 			return false
 		}
+
 		return claims.VerifySubject(d.authUserName)
 	}
 
@@ -177,10 +182,7 @@ func (d *Dashboard) setupRoutes(e *echo.Echo) {
 	e.Group("/dashboard/*").Use(mw)
 
 	// Pass all the dashboard request through to the local rest API
-	err := d.setupAPIRoutes(e.Group("/dashboard/api", d.apiMiddlewares()...))
-	if err != nil {
-		d.LogPanicf("failed to setup node routes: %w", err)
-	}
+	d.setupAPIRoutes(e.Group("/dashboard/api", d.apiMiddlewares()...))
 
 	e.GET("/dashboard/ws", d.websocketRoute)
 

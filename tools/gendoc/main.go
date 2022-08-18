@@ -6,7 +6,6 @@ import (
 
 	"github.com/iotaledger/hive.go/apputils/config"
 	"github.com/iotaledger/hive.go/core/app"
-
 	dashboardApp "github.com/iotaledger/inx-dashboard/core/app"
 )
 

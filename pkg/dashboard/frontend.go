@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+//nolint:typecheck // the linter can't find the files in the git submodule
 //go:embed frontend
 var frontendFiles embed.FS
 
@@ -17,6 +18,7 @@ func distFileSystem() http.FileSystem {
 	if err != nil {
 		panic(err)
 	}
+
 	return http.FS(f)
 }
 
@@ -43,8 +45,9 @@ func calculateMimeType(e echo.Context) string {
 
 func frontendMiddleware() echo.MiddlewareFunc {
 	fs := distFileSystem()
+
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) (err error) {
+		return func(c echo.Context) error {
 			contentType := calculateMimeType(c)
 
 			path := strings.TrimPrefix(c.Request().URL.Path, "/dashboard/")
@@ -63,6 +66,7 @@ func frontendMiddleware() echo.MiddlewareFunc {
 					return next(c)
 				}
 			}
+
 			return c.Stream(http.StatusOK, contentType, staticBlob)
 		}
 	}

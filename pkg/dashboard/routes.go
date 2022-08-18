@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -57,7 +56,7 @@ const (
 	// RouteCoreBlock is the route for getting a block by its blockID.
 	// GET returns the block based on the given type in the request "Accept" header.
 	// MIMEApplicationJSON => json
-	// MIMEVendorIOTASerializer => bytes
+	// MIMEVendorIOTASerializer => bytes.
 	RouteCoreBlock = CoreAPIRoute + "/blocks/:" + ParameterBlockID
 
 	// RouteCoreBlockMetadata is the route for getting block metadata by its blockID.
@@ -67,25 +66,25 @@ const (
 	// RouteCoreTransactionsIncludedBlock is the route for getting the block that was included in the ledger for a given transaction ID.
 	// GET returns the block based on the given type in the request "Accept" header.
 	// MIMEApplicationJSON => json
-	// MIMEVendorIOTASerializer => bytes
+	// MIMEVendorIOTASerializer => bytes.
 	RouteCoreTransactionsIncludedBlock = CoreAPIRoute + "/transactions/:" + ParameterTransactionID + "/included-block"
 
 	// RouteCoreMilestoneByID is the route for getting a milestone by its ID.
 	// GET returns the milestone.
 	// MIMEApplicationJSON => json
-	// MIMEVendorIOTASerializer => bytes
+	// MIMEVendorIOTASerializer => bytes.
 	RouteCoreMilestoneByID = CoreAPIRoute + "/milestones/:" + ParameterMilestoneID
 
 	// RouteCoreMilestoneByIndex is the route for getting a milestone by its milestoneIndex.
 	// GET returns the milestone.
 	// MIMEApplicationJSON => json
-	// MIMEVendorIOTASerializer => bytes
+	// MIMEVendorIOTASerializer => bytes.
 	RouteCoreMilestoneByIndex = CoreAPIRoute + "/milestones/by-index/:" + ParameterMilestoneIndex
 
 	// RouteCoreOutput is the route for getting an output by its outputID (transactionHash + outputIndex).
 	// GET returns the output based on the given type in the request "Accept" header.
 	// MIMEApplicationJSON => json
-	// MIMEVendorIOTASerializer => bytes
+	// MIMEVendorIOTASerializer => bytes.
 	RouteCoreOutput = CoreAPIRoute + "/outputs/:" + ParameterOutputID
 
 	// RouteCorePeer is the route for getting peers by their peerID.
@@ -182,7 +181,7 @@ const (
 	RouteParticipationEventStatus = ParticipationRoute + "/events/:" + ParameterParticipationEventID + "/status"
 
 	// RouteParticipationAdminCreateEvent is the route the node operator can use to add events.
-	// POST creates a new event to track
+	// POST creates a new event to track.
 	RouteParticipationAdminCreateEvent = ParticipationRoute + "/admin/events"
 
 	// RouteParticipationAdminDeleteEvent is the route the node operator can use to remove events.
@@ -204,7 +203,7 @@ const (
 	RouteSpammerStop = SpammerRoute + "/stop"
 )
 
-func (d *Dashboard) setupAPIRoutes(routeGroup *echo.Group) error {
+func (d *Dashboard) setupAPIRoutes(routeGroup *echo.Group) {
 
 	routeGroup.GET(RouteRoutes, func(c echo.Context) error {
 		return d.forwardRequest(c)
@@ -302,25 +301,25 @@ func (d *Dashboard) setupAPIRoutes(routeGroup *echo.Group) error {
 	routeGroup.POST(RouteSpammerStop, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
-
-	return nil
 }
 
 func readAndCloseRequestBody(res *http.Request) ([]byte, error) {
 	defer res.Body.Close()
-	resBody, err := ioutil.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read response body: %w", err)
 	}
+
 	return resBody, nil
 }
 
 func readAndCloseResponseBody(res *http.Response) ([]byte, error) {
 	defer res.Body.Close()
-	resBody, err := ioutil.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read response body: %w", err)
 	}
+
 	return resBody, nil
 }
 
@@ -339,6 +338,7 @@ func (d *Dashboard) forwardRequest(c echo.Context) error {
 		if reqBody == nil {
 			return nil
 		}
+
 		return bytes.NewReader(reqBody)
 	}())
 	if err != nil {

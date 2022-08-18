@@ -26,12 +26,12 @@ func ParseEd25519PrivateKeyFromString(identityPrivKey string) (ed25519.PrivateKe
 		return nil, ErrNoPrivKeyFound
 	}
 
-	hivePrivKey, err := hivecrypto.ParseEd25519PrivateKeyFromString(identityPrivKey)
+	stdPrivKey, err := hivecrypto.ParseEd25519PrivateKeyFromString(identityPrivKey)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse private key: %w", ErrPrivKeyInvalid)
 	}
 
-	return ed25519.PrivateKey(hivePrivKey), nil
+	return stdPrivKey, nil
 }
 
 // ReadEd25519PrivateKeyFromPEMFile reads an Ed25519 private key from a file with PEM format.
@@ -130,6 +130,7 @@ func LoadOrCreateIdentityPrivateKey(identityFilePath string, identityPrivKey str
 		if err := WriteEd25519PrivateKeyToPEMFile(identityFilePath, privKey); err != nil {
 			return nil, false, fmt.Errorf("unable to store private key file for identity: %w", err)
 		}
+
 		return privKey, true, nil
 
 	default:

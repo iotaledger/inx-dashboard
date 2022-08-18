@@ -12,6 +12,7 @@ func (d *Dashboard) currentDatabaseSize() *DatabaseSizesMetric {
 	newMetric, err := d.getDatabaseSizeMetric()
 	if err != nil {
 		d.LogWarnf("error in database size calculation: %s", err)
+
 		return nil
 	}
 
@@ -19,6 +20,7 @@ func (d *Dashboard) currentDatabaseSize() *DatabaseSizesMetric {
 	if len(d.cachedDatabaseSizeMetrics) > 600 {
 		d.cachedDatabaseSizeMetrics = d.cachedDatabaseSizeMetrics[len(d.cachedDatabaseSizeMetrics)-600:]
 	}
+
 	return newMetric
 }
 

@@ -7,32 +7,31 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/pkg/errors"
 )
 
-// Errors
+// Errors.
 var (
 	ErrJWTInvalidClaims = echo.NewHTTPError(http.StatusUnauthorized, "invalid jwt claims")
 )
 
-type JWTAuth struct {
+type Auth struct {
 	subject        string
 	sessionTimeout time.Duration
 	identity       string
 	secret         []byte
 }
 
-func NewJWTAuth(subject string, sessionTimeout time.Duration, identity string, secret ed25519.PrivateKey) (*JWTAuth, error) {
+func NewAuth(subject string, sessionTimeout time.Duration, identity string, secret ed25519.PrivateKey) (*Auth, error) {
 
 	if len(subject) == 0 {
 		return nil, errors.New("subject must not be empty")
 	}
 
-	return &JWTAuth{
+	return &Auth{
 		subject:        subject,
 		sessionTimeout: sessionTimeout,
 		identity:       identity,
@@ -59,7 +58,7 @@ func (c *AuthClaims) VerifySubject(expected string) bool {
 	return c.compare(c.Subject, expected)
 }
 
-func (j *JWTAuth) Middleware(skipper middleware.Skipper, allow func(c echo.Context, subject string, claims *AuthClaims) bool) echo.MiddlewareFunc {
+func (j *Auth) Middleware(skipper middleware.Skipper, allow func(c echo.Context, subject string, claims *AuthClaims) bool) echo.MiddlewareFunc {
 
 	config := middleware.JWTConfig{
 		ContextKey: "jwt",
@@ -86,7 +85,10 @@ func (j *JWTAuth) Middleware(skipper middleware.Skipper, allow func(c echo.Conte
 				return err
 			}
 
-			token := c.Get("jwt").(*jwt.Token)
+			token, ok := c.Get("jwt").(*jwt.Token)
+			if !ok {
+				return fmt.Errorf("expected *jwt.Token, got %T", c.Get("jwt"))
+			}
 
 			// validate the signing method we expect
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -112,7 +114,7 @@ func (j *JWTAuth) Middleware(skipper middleware.Skipper, allow func(c echo.Conte
 	}
 }
 
-func (j *JWTAuth) IssueJWT() (string, error) {
+func (j *Auth) IssueJWT() (string, error) {
 
 	now := time.Now()
 
@@ -141,7 +143,7 @@ func (j *JWTAuth) IssueJWT() (string, error) {
 	return token.SignedString(j.secret)
 }
 
-func (j *JWTAuth) VerifyJWT(token string, allow func(claims *AuthClaims) bool) bool {
+func (j *Auth) VerifyJWT(token string, allow func(claims *AuthClaims) bool) bool {
 
 	t, err := jwt.ParseWithClaims(token, &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
 		// validate the signing method we expect
@@ -165,5 +167,6 @@ func (j *JWTAuth) VerifyJWT(token string, allow func(claims *AuthClaims) bool) b
 
 		return true
 	}
+
 	return false
 }
