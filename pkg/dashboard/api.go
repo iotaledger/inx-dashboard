@@ -182,10 +182,7 @@ func (d *Dashboard) setupRoutes(e *echo.Echo) {
 	e.Group("/dashboard/*").Use(mw)
 
 	// Pass all the dashboard request through to the local rest API
-	err := d.setupAPIRoutes(e.Group("/dashboard/api", d.apiMiddlewares()...))
-	if err != nil {
-		d.LogPanicf("failed to setup node routes: %w", err)
-	}
+	d.setupAPIRoutes(e.Group("/dashboard/api", d.apiMiddlewares()...))
 
 	e.GET("/dashboard/ws", d.websocketRoute)
 

@@ -203,7 +203,7 @@ const (
 	RouteSpammerStop = SpammerRoute + "/stop"
 )
 
-func (d *Dashboard) setupAPIRoutes(routeGroup *echo.Group) error {
+func (d *Dashboard) setupAPIRoutes(routeGroup *echo.Group) {
 
 	routeGroup.GET(RouteRoutes, func(c echo.Context) error {
 		return d.forwardRequest(c)
@@ -301,8 +301,6 @@ func (d *Dashboard) setupAPIRoutes(routeGroup *echo.Group) error {
 	routeGroup.POST(RouteSpammerStop, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
-
-	return nil
 }
 
 func readAndCloseRequestBody(res *http.Request) ([]byte, error) {
