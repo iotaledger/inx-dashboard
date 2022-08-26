@@ -37,7 +37,7 @@ You can use `hornet tool pwd-hash` to generate credentials that you could use in
 
 Check the [Set Dashboard Credentials](http://wiki.iota.org/hornet/develop/how_tos/using_docker#4-set-dashboard-credentials) section of the recommended setup for more details.
 
-You can find all the configuration options in the [configuration section](configuration.md).
+You can find all the configuration options in the [Configuration section](configuration.md).
 
 ## Source Code
 
