@@ -15,27 +15,27 @@ keywords:
 
 # Welcome to INX-Dashboard
 
-INX-Dashboard is a node configuration dashboard for node owners.
-It provides an overview of your nodes health and allows you to manage peers and plugins.
-You can browse the nodes database with the built-in explorer and check the current tangle activity in the visualizer.
+INX-Dashboard provides a web GUI tool to help you manage your node. It provides an overview of the node's status and health and allows you to choose its peers, as well as the enabled plugins. It has a built-in explorer of all nodes on the network and visualizer for activity on the Tangle.
 
 ## Setup
 
-The recommended setup is to use the provided [Docker images](https://hub.docker.com/r/iotaledger/inx-dashboard).
-These images are also used in our [HORNET recommended setup using Docker](http://wiki.iota.org/hornet/develop/how_tos/using_docker).
+We recommend you to use the [Docker images](https://hub.docker.com/r/iotaledger/inx-dashboard).
+These images are also used in the [Docker setup](http://wiki.iota.org/hornet/develop/how_tos/using_docker) of Hornet.
 
 ## Configuration
 
-The dashboard is configured by default to connect to your HORNET instance.
-It exposes the web UI on port `8081` by default.
+The dashboard connects to the local Hornet instance by default.
+It exposes the web GUI on port `8081` by default.
 
-The dashboard provides built-in access control that can be configured by setting the `dashboard.auth.passwordHash` and `dashboard.auth.passwordSalt` values in your `config.json`.
+The dashboard provides built-in access control that you can [configure](./configuration.md#dashboard_auth) by setting the values for `dashboard.auth.passwordHash` and `dashboard.auth.passwordSalt`.
 
 :::note
-You can use `hornet tool pwd-hash` to generate a set of credentials to use in your `config.json`.
+
+You can use `hornet tool pwd-hash` to generate credentials that you could use in the configuration file.
+
 :::
 
-Check the [Set dashboard credentials](http://wiki.iota.org/hornet/develop/how_tos/using_docker#4-set-dashboard-credentials) section of the recommended setup to learn how to configure your credentials.
+Check the [Set Dashboard Credentials](http://wiki.iota.org/hornet/develop/how_tos/using_docker#4-set-dashboard-credentials) section of the recommended setup for more details.
 
 You can find all the configuration options in the [configuration section](configuration.md).
 

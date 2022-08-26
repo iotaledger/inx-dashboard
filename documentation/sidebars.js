@@ -17,7 +17,7 @@ module.exports = {
         },
         {
             type: 'category',
-            label: 'References',
+            label: 'Reference',
             items: [
                 {
                     type: 'doc',
