@@ -15,7 +15,7 @@ keywords:
 
 # Welcome to INX-Dashboard
 
-INX-Dashboard provides a web GUI tool to help you manage your node. It provides an overview of the node's status and health and allows you to choose its peers, as well as the enabled plugins. It has a built-in explorer of all nodes on the network and visualizer for activity on the Tangle.
+INX-Dashboard provides a web GUI tool to help you manage your node. It provides an overview of the node's status and health and allows you to choose its peers, as well as the enabled plugins. It has a built-in explorer of all nodes on the network and a visualizer for activity on the Tangle.
 
 ## Setup
 
