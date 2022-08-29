@@ -66,7 +66,11 @@ func (d *Dashboard) getLatestMilestoneIndex() uint32 {
 }
 
 func (d *Dashboard) getMilestoneIDHex(index uint32) (string, error) {
-	milestone, err := d.nodeBridge.Milestone(index)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	milestone, err := d.nodeBridge.Milestone(ctx, index)
 	if err != nil {
 		return "", err
 	}
