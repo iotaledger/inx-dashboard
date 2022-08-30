@@ -99,7 +99,7 @@ func (d *Dashboard) Init() {
 		d.authPasswordHash,
 		d.authPasswordSalt)
 	if err != nil {
-		d.LogPanicf("basic auth initialization failed: %w", err)
+		d.LogErrorfAndExit("basic auth initialization failed: %w", err)
 	}
 	d.basicAuth = basicAuth
 
@@ -109,7 +109,7 @@ func (d *Dashboard) Init() {
 	// load up the previously generated identity or create a new one
 	privKey, newlyCreated, err := jwt.LoadOrCreateIdentityPrivateKey(d.identityFilePath, d.identityPrivateKey)
 	if err != nil {
-		d.LogPanic(err)
+		d.LogErrorAndExit(err)
 	}
 
 	if newlyCreated {
@@ -133,7 +133,7 @@ func (d *Dashboard) Init() {
 		privKey,
 	)
 	if err != nil {
-		d.LogPanicf("JWT auth initialization failed: %w", err)
+		d.LogErrorfAndExit("JWT auth initialization failed: %w", err)
 	}
 	d.jwtAuth = jwtAuth
 
