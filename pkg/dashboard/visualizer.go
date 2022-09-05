@@ -6,8 +6,10 @@ import (
 	"sync"
 
 	"github.com/iancoleman/orderedmap"
+	"go.uber.org/atomic"
 
 	"github.com/iotaledger/hive.go/core/events"
+	"github.com/iotaledger/hive.go/core/logger"
 	"github.com/iotaledger/inx-app/nodebridge"
 	"github.com/iotaledger/inx-dashboard/pkg/daemon"
 	inx "github.com/iotaledger/inx/go"
@@ -31,9 +33,21 @@ func ConfirmationCaller(handler interface{}, params ...interface{}) {
 type Visualizer struct {
 	sync.RWMutex
 
+	// the logger used to log events.
+	*logger.WrappedLogger
+
+	nodeBridge *nodebridge.NodeBridge
+
 	vertices *orderedmap.OrderedMap
 	capacity int
-	Events   *VisualizerEvents
+	running  *atomic.Bool
+	active   *atomic.Bool
+	//nolint:containedctx // false positive
+	ctx                     context.Context
+	ctxCancelListenToBlocks context.CancelFunc
+	wgListenToBlocks        sync.WaitGroup
+
+	Events *VisualizerEvents
 }
 
 type VisualizerEvents struct {
@@ -43,10 +57,14 @@ type VisualizerEvents struct {
 	Confirmation       *events.Event
 }
 
-func NewVisualizer(capacity int) *Visualizer {
+func NewVisualizer(log *logger.Logger, nodeBridge *nodebridge.NodeBridge, capacity int) *Visualizer {
 	return &Visualizer{
-		vertices: orderedmap.New(),
-		capacity: capacity,
+		WrappedLogger: logger.NewWrappedLogger(log),
+		nodeBridge:    nodeBridge,
+		vertices:      orderedmap.New(),
+		capacity:      capacity,
+		running:       atomic.NewBool(false),
+		active:        atomic.NewBool(false),
 		Events: &VisualizerEvents{
 			VertexCreated:      events.NewEvent(VertexCaller),
 			VertexSolidUpdated: events.NewEvent(VertexCaller),
@@ -54,6 +72,82 @@ func NewVisualizer(capacity int) *Visualizer {
 			Confirmation:       events.NewEvent(ConfirmationCaller),
 		},
 	}
+}
+
+func (v *Visualizer) Run(ctx context.Context) {
+	v.Lock()
+	defer v.Unlock()
+
+	if v.running.Swap(true) {
+		// already running
+		return
+	}
+
+	v.ctx = ctx
+}
+
+func (v *Visualizer) UpdateState(active bool) {
+	if !v.running.Load() {
+		// do not update the state until the visualizer is running
+		return
+	}
+
+	v.Lock()
+	defer v.Unlock()
+
+	if oldActive := v.active.Swap(active); oldActive == active {
+		// state didn't change
+		return
+	}
+
+	// state changed => subscribe or unsubscribe from INX streams
+	if active {
+		v.startListenToBlocks()
+
+		return
+	}
+
+	// visualizer was deactivated
+	// stop listening to blocks
+	v.stopListenToBlocks()
+}
+
+func (v *Visualizer) stopListenToBlocks() {
+	// stop listening to blocks
+	if v.ctxCancelListenToBlocks != nil {
+		v.ctxCancelListenToBlocks()
+
+		// wait until ListenToBlocks stopped
+		v.wgListenToBlocks.Wait()
+	}
+
+	// clear the visualizer
+	v.clear()
+}
+
+func (v *Visualizer) startListenToBlocks() {
+	v.stopListenToBlocks()
+
+	// visualizer was activated
+	// => start listening to blocks
+	v.wgListenToBlocks = sync.WaitGroup{}
+	v.wgListenToBlocks.Add(1)
+
+	ctx, cancel := context.WithCancel(v.ctx)
+	v.ctxCancelListenToBlocks = cancel
+
+	go func() {
+		if err := v.nodeBridge.ListenToBlocks(ctx, cancel, func(block *iotago.Block) {
+			v.AddVertex(block)
+		}); err != nil {
+			v.LogWarnf("Failed to listen to blocks: %v", err)
+		}
+		v.wgListenToBlocks.Done()
+	}()
+}
+
+func (v *Visualizer) clear() {
+	v.vertices = orderedmap.New()
 }
 
 func (v *Visualizer) removeOldEntries() {
@@ -203,6 +297,34 @@ func (v *Visualizer) ForEachCreated(consumer func(vertex *VisualizerVertex) bool
 	}
 }
 
+func (v *Visualizer) ApplyConfirmedMilestoneChanged(ms *nodebridge.Milestone) {
+
+	if !v.active.Load() {
+		// visualizer is not active
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(v.ctx, nodeTimeout)
+	defer cancel()
+
+	conflictingBlocks := iotago.BlockIDs{}
+
+	if err := v.nodeBridge.MilestoneConeMetadata(ctx, cancel, ms.Milestone.Index, func(metadata *inx.BlockMetadata) {
+		blockMeta := blockMetadataFromINXBlockMetadata(metadata)
+
+		v.SetIsReferenced(blockMeta.BlockID)
+
+		if blockMeta.IsConflicting {
+			v.SetIsConflicting(blockMeta.BlockID)
+			conflictingBlocks = append(conflictingBlocks, blockMeta.BlockID)
+		}
+	}); err != nil {
+		v.LogWarnf("failed to get milestone cone metadata: %v", err)
+	}
+
+	v.AddConfirmation(ms.Milestone.Parents, conflictingBlocks)
+}
+
 func (d *Dashboard) runVisualizerFeed() {
 
 	onVisualizerVertexCreated := events.NewClosure(func(vertex *VisualizerVertex) {
@@ -263,10 +385,9 @@ func (d *Dashboard) runVisualizerFeed() {
 		d.visualizer.SetIsSolid(metadata.BlockId.Unwrap())
 	})
 
-	if err := d.daemon.BackgroundWorker("Dashboard[Visualizer]", func(ctx context.Context) {
-		ctxWithCancel, cancel := context.WithCancel(ctx)
-		defer cancel()
+	onConfirmedMilestoneChanged := events.NewClosure(d.visualizer.ApplyConfirmedMilestoneChanged)
 
+	if err := d.daemon.BackgroundWorker("Dashboard[Visualizer]", func(ctx context.Context) {
 		d.visualizer.Events.VertexCreated.Hook(onVisualizerVertexCreated)
 		defer d.visualizer.Events.VertexCreated.Detach(onVisualizerVertexCreated)
 		d.visualizer.Events.VertexSolidUpdated.Hook(onVisualizerVertexSolidUpdated)
@@ -277,38 +398,10 @@ func (d *Dashboard) runVisualizerFeed() {
 		defer d.visualizer.Events.Confirmation.Detach(onVisualizerConfirmation)
 		d.tangleListener.Events.BlockSolid.Hook(onBlockSolid)
 		defer d.tangleListener.Events.BlockSolid.Detach(onBlockSolid)
-
-		go func() {
-			if err := d.nodeBridge.ListenToBlocks(ctxWithCancel, cancel, func(block *iotago.Block) {
-				d.visualizer.AddVertex(block)
-			}); err != nil {
-				d.LogWarnf("Failed to listen to blocks: %v", err)
-			}
-		}()
-
-		onConfirmedMilestoneChanged := events.NewClosure(func(ms *nodebridge.Milestone) {
-			ctx, cancel := context.WithTimeout(ctxWithCancel, nodeTimeout)
-			defer cancel()
-
-			conflictingBlocks := iotago.BlockIDs{}
-
-			if err := d.nodeBridge.MilestoneConeMetadata(ctx, cancel, ms.Milestone.Index, func(metadata *inx.BlockMetadata) {
-				blockMeta := blockMetadataFromINXBlockMetadata(metadata)
-
-				d.visualizer.SetIsReferenced(blockMeta.BlockID)
-
-				if blockMeta.IsConflicting {
-					d.visualizer.SetIsConflicting(blockMeta.BlockID)
-					conflictingBlocks = append(conflictingBlocks, blockMeta.BlockID)
-				}
-			}); err != nil {
-				d.LogWarnf("failed to get milestone cone metadata: %v", err)
-			}
-
-			d.visualizer.AddConfirmation(ms.Milestone.Parents, conflictingBlocks)
-		})
 		d.nodeBridge.Events.ConfirmedMilestoneChanged.Hook(onConfirmedMilestoneChanged)
 		defer d.nodeBridge.Events.ConfirmedMilestoneChanged.Detach(onConfirmedMilestoneChanged)
+
+		d.visualizer.Run(ctx)
 
 		<-ctx.Done()
 

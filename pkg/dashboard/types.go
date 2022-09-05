@@ -2,8 +2,8 @@ package dashboard
 
 // Msg represents a websocket message.
 type Msg struct {
-	Type byte        `json:"type"`
-	Data interface{} `json:"data"`
+	Type WebSocketMsgType `json:"type"`
+	Data interface{}      `json:"data"`
 }
 
 // PublicNodeStatus represents the public node status.
