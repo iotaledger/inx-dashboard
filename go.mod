@@ -6,13 +6,14 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gorilla/websocket v1.5.0
 	github.com/iancoleman/orderedmap v0.2.0
-	github.com/iotaledger/hive.go/core v1.0.0-beta.4
+	github.com/iotaledger/hive.go/core v1.0.0-beta.4.0.20220905122421-b0510b4f7ed0
 	github.com/iotaledger/inx-app v1.0.0-beta.10
 	github.com/iotaledger/inx/go v1.0.0-beta.6
 	github.com/iotaledger/iota.go/v3 v3.0.0-beta.8
 	github.com/labstack/echo/v4 v4.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.13.0
+	go.uber.org/atomic v1.10.0
 	go.uber.org/dig v1.15.0
 	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9
@@ -68,7 +69,6 @@ require (
 	github.com/tcnksm/go-latest v0.0.0-20170313132115-e3007ae9052e // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect
-	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
 	golang.org/x/net v0.0.0-20220826154423-83b083e8dc8b // indirect

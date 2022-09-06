@@ -13,7 +13,9 @@ import (
 
 	"github.com/iotaledger/hive.go/core/basicauth"
 	hivedaemon "github.com/iotaledger/hive.go/core/daemon"
+	"github.com/iotaledger/hive.go/core/generics/event"
 	"github.com/iotaledger/hive.go/core/logger"
+	"github.com/iotaledger/hive.go/core/subscriptionmanager"
 	"github.com/iotaledger/hive.go/core/websockethub"
 	"github.com/iotaledger/inx-app/httpserver"
 	"github.com/iotaledger/inx-app/nodebridge"
@@ -52,7 +54,8 @@ type Dashboard struct {
 	nodeClient    *nodeclient.Client
 	metricsClient *MetricsClient
 
-	visualizer *Visualizer
+	visualizer          *Visualizer
+	subscriptionManager *subscriptionmanager.SubscriptionManager[websockethub.ClientID, WebSocketMsgType]
 
 	cachedDatabaseSizeMetrics []*DatabaseSizesMetric
 }
@@ -73,23 +76,53 @@ func New(
 	hub *websockethub.Hub,
 	debugLogRequests bool) *Dashboard {
 
-	return &Dashboard{
-		WrappedLogger:      logger.NewWrappedLogger(log),
-		daemon:             daemon,
-		bindAddress:        bindAddress,
-		authUserName:       authUserName,
-		authPasswordHash:   authPasswordHash,
-		authPasswordSalt:   authPasswordSalt,
-		authSessionTimeout: authSessionTimeout,
-		identityFilePath:   identityFilePath,
-		identityPrivateKey: identityPrivateKey,
-		developerMode:      developerMode,
-		developerModeURL:   developerModeURL,
-		nodeBridge:         nodeBridge,
-		hub:                hub,
-		debugLogRequests:   debugLogRequests,
-		visualizer:         NewVisualizer(VisualizerCapacity),
+	d := &Dashboard{
+		WrappedLogger:       logger.NewWrappedLogger(log),
+		daemon:              daemon,
+		bindAddress:         bindAddress,
+		authUserName:        authUserName,
+		authPasswordHash:    authPasswordHash,
+		authPasswordSalt:    authPasswordSalt,
+		authSessionTimeout:  authSessionTimeout,
+		identityFilePath:    identityFilePath,
+		identityPrivateKey:  identityPrivateKey,
+		developerMode:       developerMode,
+		developerModeURL:    developerModeURL,
+		nodeBridge:          nodeBridge,
+		hub:                 hub,
+		debugLogRequests:    debugLogRequests,
+		visualizer:          NewVisualizer(log, nodeBridge, VisualizerCapacity),
+		subscriptionManager: subscriptionmanager.New[websockethub.ClientID, WebSocketMsgType](),
 	}
+
+	// events
+	d.subscriptionManager.Events().TopicAdded.Hook(event.NewClosure(func(event *subscriptionmanager.TopicEvent[WebSocketMsgType]) {
+		d.checkVisualizerSubscriptions()
+	}))
+	d.subscriptionManager.Events().TopicRemoved.Hook(event.NewClosure(func(event *subscriptionmanager.TopicEvent[WebSocketMsgType]) {
+		d.checkVisualizerSubscriptions()
+	}))
+
+	return d
+}
+
+func (d *Dashboard) checkVisualizerSubscriptions() {
+
+	active := false
+	for _, topic := range []WebSocketMsgType{
+		MsgTypeVisualizerVertex,
+		MsgTypeVisualizerSolidInfo,
+		MsgTypeVisualizerConfirmedInfo,
+		MsgTypeVisualizerMilestoneInfo,
+		MsgTypeVisualizerTipInfo} {
+		if d.subscriptionManager.HasSubscribers(topic) {
+			active = true
+
+			break
+		}
+	}
+
+	d.visualizer.UpdateState(active)
 }
 
 func (d *Dashboard) Init() {

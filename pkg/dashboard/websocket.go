@@ -3,38 +3,41 @@ package dashboard
 import (
 	"github.com/labstack/echo/v4"
 
+	"github.com/iotaledger/hive.go/core/generics/event"
 	"github.com/iotaledger/hive.go/core/syncutils"
 	"github.com/iotaledger/hive.go/core/websockethub"
 	"github.com/iotaledger/inx-dashboard/pkg/jwt"
 )
 
+type WebSocketMsgType byte
+
 const (
 	// MsgTypeSyncStatus is the type of the SyncStatus message.
-	MsgTypeSyncStatus byte = iota
+	MsgTypeSyncStatus WebSocketMsgType = iota
 	// MsgTypePublicNodeStatus is the type of the PublicNodeStatus message.
-	MsgTypePublicNodeStatus = 1
+	MsgTypePublicNodeStatus
 	// MsgTypeNodeInfoExtended is the type of the NodeInfoExtended message.
-	MsgTypeNodeInfoExtended = 2
+	MsgTypeNodeInfoExtended
 	// MsgTypeGossipMetrics is the type of the GossipMetrics message.
-	MsgTypeGossipMetrics = 3
+	MsgTypeGossipMetrics
 	// MsgTypeMilestone is the type of the Milestone message.
-	MsgTypeMilestone = 4
+	MsgTypeMilestone
 	// MsgTypePeerMetric is the type of the PeerMetric message.
-	MsgTypePeerMetric = 5
+	MsgTypePeerMetric
 	// MsgTypeConfirmedMsMetrics is the type of the ConfirmedMsMetrics message.
-	MsgTypeConfirmedMsMetrics = 6
+	MsgTypeConfirmedMsMetrics
 	// MsgTypeVisualizerVertex is the type of the Vertex message for the visualizer.
-	MsgTypeVisualizerVertex = 7
+	MsgTypeVisualizerVertex
 	// MsgTypeVisualizerSolidInfo is the type of the SolidInfo message for the visualizer.
-	MsgTypeVisualizerSolidInfo = 8
+	MsgTypeVisualizerSolidInfo
 	// MsgTypeVisualizerConfirmedInfo is the type of the ConfirmedInfo message for the visualizer.
-	MsgTypeVisualizerConfirmedInfo = 9
+	MsgTypeVisualizerConfirmedInfo
 	// MsgTypeVisualizerMilestoneInfo is the type of the MilestoneInfo message for the visualizer.
-	MsgTypeVisualizerMilestoneInfo = 10
+	MsgTypeVisualizerMilestoneInfo
 	// MsgTypeVisualizerTipInfo is the type of the TipInfo message for the visualizer.
-	MsgTypeVisualizerTipInfo = 11
+	MsgTypeVisualizerTipInfo
 	// MsgTypeDatabaseSizeMetric is the type of the database Size message for the metrics.
-	MsgTypeDatabaseSizeMetric = 12
+	MsgTypeDatabaseSizeMetric
 )
 
 func (d *Dashboard) websocketRoute(ctx echo.Context) error {
@@ -44,7 +47,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 		}
 	}()
 
-	publicTopics := []byte{
+	publicTopics := []WebSocketMsgType{
 		MsgTypeSyncStatus,
 		MsgTypePublicNodeStatus,
 		MsgTypeGossipMetrics,
@@ -57,7 +60,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 		MsgTypeVisualizerTipInfo,
 	}
 
-	isProtectedTopic := func(topic byte) bool {
+	isProtectedTopic := func(topic WebSocketMsgType) bool {
 		for _, publicTopic := range publicTopics {
 			if topic == publicTopic {
 				return false
@@ -68,13 +71,14 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 	}
 
 	// this function sends the initial values for some topics
-	sendInitValue := func(client *websockethub.Client, initValuesSent map[byte]struct{}, topic byte) {
+	sendInitValue := func(client *websockethub.Client, initValuesSent map[WebSocketMsgType]struct{}, topic WebSocketMsgType) {
 		// always send the initial values for the Vertex topic, ignore others that were already sent
 		if _, sent := initValuesSent[topic]; sent && (topic != MsgTypeVisualizerVertex) {
 			return
 		}
 		initValuesSent[topic] = struct{}{}
 
+		//nolint:exhaustive // false positive
 		switch topic {
 
 		case MsgTypeSyncStatus:
@@ -153,8 +157,18 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 	}
 
 	topicsLock := syncutils.RWMutex{}
-	registeredTopics := make(map[byte]struct{})
-	initValuesSent := make(map[byte]struct{})
+	registeredTopics := make(map[WebSocketMsgType]struct{})
+	initValuesSent := make(map[WebSocketMsgType]struct{})
+
+	d.hub.Events().ClientConnected.Attach(event.NewClosure(func(event *websockethub.ClientConnectionEvent) {
+		d.LogDebugf("WebSocket client (ID: %d) connection established", event.ID)
+		d.subscriptionManager.Connect(event.ID)
+	}))
+
+	d.hub.Events().ClientDisconnected.Attach(event.NewClosure(func(event *websockethub.ClientConnectionEvent) {
+		d.LogDebugf("WebSocket client (ID: %d) connection closed", event.ID)
+		d.subscriptionManager.Disconnect(event.ID)
+	}))
 
 	d.hub.ServeWebsocket(ctx.Response(), ctx.Request(),
 		// onCreate gets called when the client is created
@@ -192,7 +206,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 							}
 
 							cmd := msg.Data[0]
-							topic := msg.Data[1]
+							topic := WebSocketMsgType(msg.Data[1])
 
 							if cmd == WebsocketCmdRegister {
 
@@ -212,6 +226,8 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 								}
 
 								// register topic fo this client
+								d.subscriptionManager.Subscribe(client.ID(), topic)
+
 								topicsLock.Lock()
 								registeredTopics[topic] = struct{}{}
 								topicsLock.Unlock()
@@ -219,7 +235,10 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 								sendInitValue(client, initValuesSent, topic)
 
 							} else if cmd == WebsocketCmdUnregister {
+
 								// unregister topic fo this client
+								d.subscriptionManager.Unsubscribe(client.ID(), topic)
+
 								topicsLock.Lock()
 								delete(registeredTopics, topic)
 								topicsLock.Unlock()
@@ -231,9 +250,11 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 		},
 
 		// onConnect gets called when the client was registered
-		func(_ *websockethub.Client) {
-			d.LogInfo("WebSocket client connection established")
-		})
+		nil,
+
+		// onDisconnect gets called when the client was disconnected
+		nil,
+	)
 
 	return nil
 }
