@@ -32,6 +32,13 @@ type ParametersDashboard struct {
 		IdentityFilePath string `default:"identity.key" usage:"the path to the identity file used for JWT"`
 		// Defines the private key used to sign the JWT tokens.
 		IdentityPrivateKey string `default:"" usage:"private key used to sign the JWT tokens (optional)"`
+
+		RateLimit struct {
+			Enabled     bool          `default:"true" usage:"whether the rate limiting should be enabled"`
+			Period      time.Duration `default:"1m" usage:"the period for rate limiting"`
+			MaxRequests int           `default:"20" usage:"the maximum number of requests per period"`
+			MaxBurst    int           `default:"30" usage:"additional requests allowed in the burst period"`
+		}
 	}
 
 	// whether the debug logging for requests should be enabled

@@ -117,11 +117,11 @@ func (d *Dashboard) apiMiddlewares() []echo.MiddlewareFunc {
 	}
 
 	jwtAllow := func(c echo.Context, subject string, claims *jwt.AuthClaims) bool {
-		if d.authUserName == "" {
+		if d.authUsername == "" {
 			return false
 		}
 
-		return claims.VerifySubject(d.authUserName)
+		return claims.VerifySubject(d.authUsername)
 	}
 
 	return []echo.MiddlewareFunc{
@@ -186,16 +186,32 @@ func (d *Dashboard) setupRoutes(e *echo.Echo) {
 
 	e.GET("/dashboard/ws", d.websocketRoute)
 
-	// Rate-limit the auth endpoint
-	rateLimiterConfig := middleware.RateLimiterConfig{
-		Store: middleware.NewRateLimiterMemoryStoreWithConfig(
-			middleware.RateLimiterMemoryStoreConfig{
-				Rate:      rate.Limit(20 / 60.0), // 20 request every 1 minute
-				Burst:     30,                    // additional burst of 30 requests
-				ExpiresIn: 5 * time.Minute,
+	authMiddlewares := []echo.MiddlewareFunc{}
+
+	if d.authRateLimitEnabled {
+		rateLimiterConfig := middleware.RateLimiterConfig{
+			Store: middleware.NewRateLimiterMemoryStoreWithConfig(
+				middleware.RateLimiterMemoryStoreConfig{
+					Rate:      rate.Limit(float64(d.authRateLimitMaxRequests) / d.authRateLimitPeriod.Seconds()),
+					Burst:     d.authRateLimitMaxBurst,
+					ExpiresIn: 5 * time.Minute,
+				},
+			),
+			IdentifierExtractor: func(ctx echo.Context) (string, error) {
+				id := ctx.RealIP()
+
+				return id, nil
 			},
-		),
+			ErrorHandler: func(context echo.Context, err error) error {
+				return context.JSON(http.StatusForbidden, nil)
+			},
+			DenyHandler: func(context echo.Context, identifier string, err error) error {
+				return context.JSON(http.StatusTooManyRequests, nil)
+			},
+		}
+
+		authMiddlewares = append(authMiddlewares, middleware.RateLimiterWithConfig(rateLimiterConfig))
 	}
 
-	e.POST("/dashboard/auth", d.authRoute, middleware.RateLimiterWithConfig(rateLimiterConfig))
+	e.POST("/dashboard/auth", d.authRoute, authMiddlewares...)
 }

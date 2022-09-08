@@ -16,7 +16,13 @@
       "passwordHash": "0000000000000000000000000000000000000000000000000000000000000000",
       "passwordSalt": "0000000000000000000000000000000000000000000000000000000000000000",
       "identityFilePath": "identity.key",
-      "identityPrivateKey": ""
+      "identityPrivateKey": "",
+      "rateLimit": {
+        "enabled": true,
+        "period": "1m",
+        "maxRequests": 20,
+        "maxBurst": 30
+      }
     },
     "debugRequestLoggerEnabled": false
   },

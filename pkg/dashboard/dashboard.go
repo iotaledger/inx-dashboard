@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/hive.go/core/basicauth"
 	hivedaemon "github.com/iotaledger/hive.go/core/daemon"
 	"github.com/iotaledger/hive.go/core/generics/event"
+	"github.com/iotaledger/hive.go/core/generics/options"
 	"github.com/iotaledger/hive.go/core/logger"
 	"github.com/iotaledger/hive.go/core/subscriptionmanager"
 	"github.com/iotaledger/hive.go/core/websockethub"
@@ -34,25 +35,30 @@ type Dashboard struct {
 	*logger.WrappedLogger
 
 	// used to access the global daemon.
-	daemon             hivedaemon.Daemon
-	bindAddress        string
-	authUserName       string
-	authPasswordHash   string
-	authPasswordSalt   string
-	authSessionTimeout time.Duration
-	identityFilePath   string
-	identityPrivateKey string
-	developerMode      bool
-	developerModeURL   string
-	nodeBridge         *nodebridge.NodeBridge
-	tangleListener     *nodebridge.TangleListener
-	hub                *websockethub.Hub
-	debugLogRequests   bool
+	daemon     hivedaemon.Daemon
+	nodeBridge *nodebridge.NodeBridge
+	hub        *websockethub.Hub
 
-	basicAuth     *basicauth.BasicAuth
-	jwtAuth       *jwt.Auth
-	nodeClient    *nodeclient.Client
-	metricsClient *MetricsClient
+	bindAddress              string
+	developerMode            bool
+	developerModeURL         string
+	authUsername             string
+	authPasswordHash         string
+	authPasswordSalt         string
+	authSessionTimeout       time.Duration
+	authIdentityFilePath     string
+	authIdentityPrivateKey   string
+	authRateLimitEnabled     bool
+	authRateLimitPeriod      time.Duration
+	authRateLimitMaxRequests int
+	authRateLimitMaxBurst    int
+	debugLogRequests         bool
+
+	basicAuth      *basicauth.BasicAuth
+	jwtAuth        *jwt.Auth
+	nodeClient     *nodeclient.Client
+	tangleListener *nodebridge.TangleListener
+	metricsClient  *MetricsClient
 
 	visualizer          *Visualizer
 	subscriptionManager *subscriptionmanager.SubscriptionManager[websockethub.ClientID, WebSocketMsgType]
@@ -60,40 +66,121 @@ type Dashboard struct {
 	cachedDatabaseSizeMetrics []*DatabaseSizesMetric
 }
 
+func WithBindAddress(bindAddress string) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.bindAddress = bindAddress
+	}
+}
+
+func WithDeveloperMode(developerMode bool) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.developerMode = developerMode
+	}
+}
+
+func WithDeveloperModeURL(developerModeURL string) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.developerModeURL = developerModeURL
+	}
+}
+
+func WithAuthUsername(authUsername string) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.authUsername = authUsername
+	}
+}
+
+func WithAuthPasswordHash(authPasswordHash string) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.authPasswordHash = authPasswordHash
+	}
+}
+
+func WithAuthPasswordSalt(authPasswordSalt string) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.authPasswordSalt = authPasswordSalt
+	}
+}
+
+func WithAuthSessionTimeout(authSessionTimeout time.Duration) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.authSessionTimeout = authSessionTimeout
+	}
+}
+
+func WithAuthIdentityFilePath(authIdentityFilePath string) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.authIdentityFilePath = authIdentityFilePath
+	}
+}
+
+func WithAuthIdentityPrivateKey(authIdentityPrivateKey string) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.authIdentityPrivateKey = authIdentityPrivateKey
+	}
+}
+
+func WithAuthRateLimitEnabled(authRateLimitEnabled bool) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.authRateLimitEnabled = authRateLimitEnabled
+	}
+}
+
+func WithAuthRateLimitPeriod(authRateLimitPeriod time.Duration) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.authRateLimitPeriod = authRateLimitPeriod
+	}
+}
+
+func WithAuthRateLimitMaxRequests(authRateLimitMaxRequests int) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.authRateLimitMaxRequests = authRateLimitMaxRequests
+	}
+}
+
+func WithAuthRateLimitMaxBurst(authRateLimitMaxBurst int) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.authRateLimitMaxBurst = authRateLimitMaxBurst
+	}
+}
+
+func WithDebugLogRequests(debugLogRequests bool) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.debugLogRequests = debugLogRequests
+	}
+}
+
 func New(
 	log *logger.Logger,
 	daemon hivedaemon.Daemon,
-	bindAddress string,
-	authUserName string,
-	authPasswordHash string,
-	authPasswordSalt string,
-	authSessionTimeout time.Duration,
-	identityFilePath string,
-	identityPrivateKey string,
-	developerMode bool,
-	developerModeURL string,
 	nodeBridge *nodebridge.NodeBridge,
 	hub *websockethub.Hub,
-	debugLogRequests bool) *Dashboard {
+	opts ...options.Option[Dashboard]) *Dashboard {
 
-	d := &Dashboard{
-		WrappedLogger:       logger.NewWrappedLogger(log),
-		daemon:              daemon,
-		bindAddress:         bindAddress,
-		authUserName:        authUserName,
-		authPasswordHash:    authPasswordHash,
-		authPasswordSalt:    authPasswordSalt,
-		authSessionTimeout:  authSessionTimeout,
-		identityFilePath:    identityFilePath,
-		identityPrivateKey:  identityPrivateKey,
-		developerMode:       developerMode,
-		developerModeURL:    developerModeURL,
-		nodeBridge:          nodeBridge,
-		hub:                 hub,
-		debugLogRequests:    debugLogRequests,
+	d := options.Apply(&Dashboard{
+		WrappedLogger: logger.NewWrappedLogger(log),
+		daemon:        daemon,
+		nodeBridge:    nodeBridge,
+		hub:           hub,
+
+		bindAddress:              "localhost:8081",
+		developerMode:            false,
+		developerModeURL:         "http://127.0.0.1:9090",
+		authUsername:             "admin",
+		authPasswordHash:         "0000000000000000000000000000000000000000000000000000000000000000",
+		authPasswordSalt:         "0000000000000000000000000000000000000000000000000000000000000000",
+		authSessionTimeout:       72 * time.Hour,
+		authIdentityFilePath:     "identity.key",
+		authIdentityPrivateKey:   "",
+		authRateLimitEnabled:     true,
+		authRateLimitPeriod:      1 * time.Minute,
+		authRateLimitMaxRequests: 20,
+		authRateLimitMaxBurst:    30,
+		debugLogRequests:         false,
+
 		visualizer:          NewVisualizer(log, nodeBridge, VisualizerCapacity),
 		subscriptionManager: subscriptionmanager.New[websockethub.ClientID, WebSocketMsgType](),
-	}
+	}, opts)
 
 	// events
 	d.subscriptionManager.Events().TopicAdded.Hook(event.NewClosure(func(event *subscriptionmanager.TopicEvent[WebSocketMsgType]) {
@@ -128,7 +215,7 @@ func (d *Dashboard) checkVisualizerSubscriptions() {
 func (d *Dashboard) Init() {
 
 	basicAuth, err := basicauth.NewBasicAuth(
-		d.authUserName,
+		d.authUsername,
 		d.authPasswordHash,
 		d.authPasswordSalt)
 	if err != nil {
@@ -137,18 +224,18 @@ func (d *Dashboard) Init() {
 	d.basicAuth = basicAuth
 
 	// make sure nobody copies around the identity file since it contains the private key of the JWT auth
-	d.LogInfof(`WARNING: never share your "%s" file as it contains your JWT private key!`, d.identityFilePath)
+	d.LogInfof(`WARNING: never share your "%s" file as it contains your JWT private key!`, d.authIdentityFilePath)
 
 	// load up the previously generated identity or create a new one
-	privKey, newlyCreated, err := jwt.LoadOrCreateIdentityPrivateKey(d.identityFilePath, d.identityPrivateKey)
+	privKey, newlyCreated, err := jwt.LoadOrCreateIdentityPrivateKey(d.authIdentityFilePath, d.authIdentityPrivateKey)
 	if err != nil {
 		d.LogErrorAndExit(err)
 	}
 
 	if newlyCreated {
-		d.LogInfof(`stored new private key for identity under "%s"`, d.identityFilePath)
+		d.LogInfof(`stored new private key for identity under "%s"`, d.authIdentityFilePath)
 	} else {
-		d.LogInfof(`loaded existing private key for identity from "%s"`, d.identityFilePath)
+		d.LogInfof(`loaded existing private key for identity from "%s"`, d.authIdentityFilePath)
 	}
 
 	pubKey, ok := privKey.Public().(ed25519.PublicKey)
@@ -160,7 +247,7 @@ func (d *Dashboard) Init() {
 	identity := hex.EncodeToString(hashedPubKey[:])
 
 	jwtAuth, err := jwt.NewAuth(
-		d.authUserName,
+		d.authUsername,
 		d.authSessionTimeout,
 		identity,
 		privKey,
