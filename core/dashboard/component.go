@@ -54,10 +54,10 @@ func provide(c *dig.Container) error {
 
 		username := ParamsDashboard.Auth.Username
 		if len(username) == 0 {
-			CoreComponent.LogErrorfAndExit("%s cannot be empty", CoreComponent.App.Config().GetParameterPath(&(ParamsDashboard.Auth.Username)))
+			CoreComponent.LogErrorfAndExit("%s cannot be empty", CoreComponent.App().Config().GetParameterPath(&(ParamsDashboard.Auth.Username)))
 		}
 		if len(username) > maxDashboardAuthUsernameSize {
-			CoreComponent.LogErrorfAndExit("%s has a max length of %d", CoreComponent.App.Config().GetParameterPath(&(ParamsDashboard.Auth.Username)), maxDashboardAuthUsernameSize)
+			CoreComponent.LogErrorfAndExit("%s has a max length of %d", CoreComponent.App().Config().GetParameterPath(&(ParamsDashboard.Auth.Username)), maxDashboardAuthUsernameSize)
 		}
 
 		upgrader := &websocket.Upgrader{
