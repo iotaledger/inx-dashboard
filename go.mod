@@ -9,7 +9,7 @@ require (
 	github.com/iotaledger/hive.go/core v1.0.0-beta.4.0.20220905122421-b0510b4f7ed0
 	github.com/iotaledger/inx-app v1.0.0-beta.10
 	github.com/iotaledger/inx/go v1.0.0-beta.6
-	github.com/iotaledger/iota.go/v3 v3.0.0-beta.8
+	github.com/iotaledger/iota.go/v3 v3.0.0-beta.9
 	github.com/labstack/echo/v4 v4.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.13.0
