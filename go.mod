@@ -6,11 +6,11 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gorilla/websocket v1.5.0
 	github.com/iancoleman/orderedmap v0.2.0
-	github.com/iotaledger/hive.go/core v1.0.0-beta.4.0.20220905122421-b0510b4f7ed0
-	github.com/iotaledger/inx-app v1.0.0-beta.10
-	github.com/iotaledger/inx/go v1.0.0-beta.6
-	github.com/iotaledger/iota.go/v3 v3.0.0-beta.8
-	github.com/labstack/echo/v4 v4.8.0
+	github.com/iotaledger/hive.go/core v1.0.0-beta.5
+	github.com/iotaledger/inx-app v1.0.0-beta.11
+	github.com/iotaledger/inx/go v1.0.0-beta.7
+	github.com/iotaledger/iota.go/v3 v3.0.0-beta.9
+	github.com/labstack/echo/v4 v4.9.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.13.0
 	go.uber.org/atomic v1.10.0
@@ -71,12 +71,12 @@ require (
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
-	golang.org/x/net v0.0.0-20220826154423-83b083e8dc8b // indirect
-	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde // indirect
-	golang.org/x/sys v0.0.0-20220825204002-c680a09ffe64 // indirect
+	golang.org/x/net v0.0.0-20220907135653-1e95f45603a7 // indirect
+	golang.org/x/sync v0.0.0-20220907140024-f12130a52804 // indirect
+	golang.org/x/sys v0.0.0-20220908164124-27713097b956 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
-	google.golang.org/genproto v0.0.0-20220829144015-23454907ede3 // indirect
+	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
+	google.golang.org/genproto v0.0.0-20220908141613-51c1cc9bc6d0 // indirect
 	google.golang.org/grpc v1.49.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
