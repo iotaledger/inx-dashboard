@@ -80,14 +80,24 @@ Example:
 
 ### <a id="dashboard_auth"></a> Auth
 
-| Name               | Description                                           | Type   | Default value                                                      |
-| ------------------ | ----------------------------------------------------- | ------ | ------------------------------------------------------------------ |
-| sessionTimeout     | How long the auth session should last before expiring | string | "72h"                                                              |
-| username           | The auth username (max 25 chars)                      | string | "admin"                                                            |
-| passwordHash       | The auth password+salt as a scrypt hash               | string | "0000000000000000000000000000000000000000000000000000000000000000" |
-| passwordSalt       | The auth salt used for hashing the password           | string | "0000000000000000000000000000000000000000000000000000000000000000" |
-| identityFilePath   | The path to the identity file used for JWT            | string | "identity.key"                                                     |
-| identityPrivateKey | Private key used to sign the JWT tokens (optional)    | string | ""                                                                 |
+| Name                                   | Description                                           | Type   | Default value                                                      |
+| -------------------------------------- | ----------------------------------------------------- | ------ | ------------------------------------------------------------------ |
+| sessionTimeout                         | How long the auth session should last before expiring | string | "72h"                                                              |
+| username                               | The auth username (max 25 chars)                      | string | "admin"                                                            |
+| passwordHash                           | The auth password+salt as a scrypt hash               | string | "0000000000000000000000000000000000000000000000000000000000000000" |
+| passwordSalt                           | The auth salt used for hashing the password           | string | "0000000000000000000000000000000000000000000000000000000000000000" |
+| identityFilePath                       | The path to the identity file used for JWT            | string | "identity.key"                                                     |
+| identityPrivateKey                     | Private key used to sign the JWT tokens (optional)    | string | ""                                                                 |
+| [rateLimit](#dashboard_auth_ratelimit) | Configuration for rateLimit                           | object |                                                                    |
+
+### <a id="dashboard_auth_ratelimit"></a> RateLimit
+
+| Name        | Description                                     | Type    | Default value |
+| ----------- | ----------------------------------------------- | ------- | ------------- |
+| enabled     | Whether the rate limiting should be enabled     | boolean | true          |
+| period      | The period for rate limiting                    | string  | "1m"          |
+| maxRequests | The maximum number of requests per period       | int     | 20            |
+| maxBurst    | Additional requests allowed in the burst period | int     | 30            |
 
 Example:
 
@@ -103,7 +113,13 @@ Example:
         "passwordHash": "0000000000000000000000000000000000000000000000000000000000000000",
         "passwordSalt": "0000000000000000000000000000000000000000000000000000000000000000",
         "identityFilePath": "identity.key",
-        "identityPrivateKey": ""
+        "identityPrivateKey": "",
+        "rateLimit": {
+          "enabled": true,
+          "period": "1m",
+          "maxRequests": 20,
+          "maxBurst": 30
+        }
       },
       "debugRequestLoggerEnabled": false
     }
