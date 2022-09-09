@@ -7,8 +7,8 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/iotaledger/hive.go/core v1.0.0-beta.5
-	github.com/iotaledger/inx-app v1.0.0-beta.11
-	github.com/iotaledger/inx/go v1.0.0-beta.7
+	github.com/iotaledger/inx-app v1.0.0-beta.12
+	github.com/iotaledger/inx/go v1.0.0-beta.8
 	github.com/iotaledger/iota.go/v3 v3.0.0-beta.9
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/pkg/errors v0.9.1
