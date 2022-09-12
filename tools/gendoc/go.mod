@@ -6,7 +6,7 @@ replace github.com/iotaledger/inx-dashboard => ../../
 
 require (
 	github.com/iotaledger/hive.go/apputils v1.0.0-beta.3
-	github.com/iotaledger/hive.go/core v1.0.0-beta.5
+	github.com/iotaledger/hive.go/core v1.0.0-beta.6
 	github.com/iotaledger/inx-dashboard v0.0.0-00010101000000-000000000000
 )
 
@@ -38,8 +38,8 @@ require (
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-beta.3 // indirect
-	github.com/iotaledger/inx-app v1.0.0-beta.11 // indirect
-	github.com/iotaledger/inx/go v1.0.0-beta.7 // indirect
+	github.com/iotaledger/inx-app v1.0.0-beta.13 // indirect
+	github.com/iotaledger/inx/go v1.0.0-beta.8 // indirect
 	github.com/iotaledger/iota.go v1.0.0 // indirect
 	github.com/iotaledger/iota.go/v3 v3.0.0-beta.9 // indirect
 	github.com/knadh/koanf v1.4.3 // indirect

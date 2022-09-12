@@ -104,16 +104,18 @@ Example:
 
 ## <a id="inx"></a> 3. INX
 
-| Name    | Description                            | Type   | Default value    |
-| ------- | -------------------------------------- | ------ | ---------------- |
-| address | The INX address to which to connect to | string | "localhost:9029" |
+| Name                  | Description                                                                                        | Type   | Default value    |
+| --------------------- | -------------------------------------------------------------------------------------------------- | ------ | ---------------- |
+| address               | The INX address to which to connect to                                                             | string | "localhost:9029" |
+| maxConnectionAttempts | The amount of times the connection to INX will be attempted before it fails (1 attempt per second) | uint   | 30               |
 
 Example:
 
 ```json
   {
     "inx": {
-      "address": "localhost:9029"
+      "address": "localhost:9029",
+      "maxConnectionAttempts": 30
     }
   }
 ```
