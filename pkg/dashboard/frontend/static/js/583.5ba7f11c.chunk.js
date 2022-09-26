@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunknode_dashboard=self.webpackChunknode_dashboard||[]).push([[583],{583:function(a,e,s){a.exports=s.p+"static/media/logo-navigation.4910244452e1b0fa03dd.svg"}}]);
