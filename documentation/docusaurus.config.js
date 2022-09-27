@@ -5,18 +5,11 @@ module.exports = {
         [
             '@docusaurus/plugin-content-docs',
             {
-                id: 'inx-dashboard-develop',
+                id: 'inx-dashboard',
                 path: path.resolve(__dirname, 'docs'),
                 routeBasePath: 'inx-dashboard',
                 sidebarPath: path.resolve(__dirname, 'sidebars.js'),
                 editUrl: 'https://github.com/iotaledger/inx-dashboard/edit/develop/documentation/docs',
-                versions: {
-                    current: {
-                        label: 'Develop',
-                        path: 'develop',
-                        badge: true
-                    },
-                },
             }
         ],
     ],
