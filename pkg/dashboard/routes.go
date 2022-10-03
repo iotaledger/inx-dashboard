@@ -16,6 +16,7 @@ const (
 	FeatureIndexer          = "indexer/v1"
 	FeatureParticipation    = "participation/v1"
 	FeatureSpammer          = "spammer/v1"
+	FeaturePoi              = "poi/v1"
 
 	BasePath              = ""
 	APIBasePath           = "/api"
@@ -24,6 +25,7 @@ const (
 	IndexerRoute          = BasePath + "/" + FeatureIndexer
 	ParticipationRoute    = BasePath + "/" + FeatureParticipation
 	SpammerRoute          = BasePath + "/" + FeatureSpammer
+	PoiRoute              = BasePath + "/" + FeaturePoi
 )
 
 const (
@@ -203,6 +205,16 @@ const (
 	RouteSpammerStop = SpammerRoute + "/stop"
 )
 
+const (
+	// RoutePoiCreate is the route used to create a proof of inclusion.
+	// GET the proof of inclusion for the given blockID.
+	RoutePoiCreate = PoiRoute + "/create/:" + ParameterBlockID
+
+	// RoutePoiValidate is the route used to validate a previously generated proof of inclusion.
+	// POST containing the proof of inclusion
+	RoutePoiValidate = PoiRoute + "/validate"
+)
+
 func (d *Dashboard) setupAPIRoutes(routeGroup *echo.Group) {
 
 	routeGroup.GET(RouteRoutes, func(c echo.Context) error {
@@ -299,6 +311,15 @@ func (d *Dashboard) setupAPIRoutes(routeGroup *echo.Group) {
 	})
 
 	routeGroup.POST(RouteSpammerStop, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+
+	// poi
+	routeGroup.GET(RoutePoiCreate, func(c echo.Context) error {
+		return d.forwardRequest(c)
+	})
+
+	routeGroup.POST(RoutePoiValidate, func(c echo.Context) error {
 		return d.forwardRequest(c)
 	})
 }
