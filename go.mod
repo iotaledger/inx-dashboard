@@ -12,7 +12,7 @@ require (
 	github.com/iotaledger/iota.go/v3 v3.0.0-rc.1
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.13.0
+	github.com/prometheus/client_golang v1.13.1
 	go.uber.org/atomic v1.10.0
 	go.uber.org/dig v1.15.0
 	golang.org/x/crypto v0.0.0-20220924013350-4ba4fb4dd9e7
