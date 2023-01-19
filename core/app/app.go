@@ -4,7 +4,7 @@ import (
 	"github.com/iotaledger/hive.go/core/app"
 	"github.com/iotaledger/hive.go/core/app/core/shutdown"
 	"github.com/iotaledger/hive.go/core/app/plugins/profiling"
-	"github.com/iotaledger/inx-app/inx"
+	"github.com/iotaledger/inx-app/core/inx"
 	"github.com/iotaledger/inx-dashboard/core/dashboard"
 	"github.com/iotaledger/inx-dashboard/plugins/prometheus"
 )
