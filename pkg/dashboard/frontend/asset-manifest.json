@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/dashboard/static/css/main.265f8660.css",
-    "main.js": "/dashboard/static/js/main.908b1428.js",
+    "main.css": "/dashboard/static/css/main.1230fa82.css",
+    "main.js": "/dashboard/static/js/main.e271f060.js",
     "static/js/118.4021bd66.chunk.js": "/dashboard/static/js/118.4021bd66.chunk.js",
     "static/js/54.49522abb.chunk.js": "/dashboard/static/js/54.49522abb.chunk.js",
     "static/js/330.9a2ff1cd.chunk.js": "/dashboard/static/js/330.9a2ff1cd.chunk.js",
@@ -54,22 +54,23 @@
     "static/media/toggle.svg": "/dashboard/static/media/toggle.9da7d3b76b3615222ce61515356ffa4e.svg",
     "static/media/pause.svg": "/dashboard/static/media/pause.8f183526ee54e218ab2d12b2e7dbea15.svg",
     "static/media/db-icon.svg": "/dashboard/static/media/db-icon.0d2bef5e4b057ba24d916a7d190c914b.svg",
-    "static/media/download.svg": "/dashboard/static/media/download.7bde89e5f5facd355496d8ab6f16250e.svg",
     "static/media/copy.svg": "/dashboard/static/media/copy.c627cf0b9bce73941709ff5324f011e6.svg",
     "static/media/uptime.svg": "/dashboard/static/media/uptime.a9b43f0965de14ce059205f56a3eb6da.svg",
     "static/media/banner-curve.svg": "/dashboard/static/media/banner-curve.abe8a24f8be162bfc9ff259fbfdaa7d8.svg",
     "static/media/milestone.svg": "/dashboard/static/media/milestone.cc04134a7d188f0909d9f23c87a360b2.svg",
+    "static/media/download.svg": "/dashboard/static/media/download.f22c6e0565e6331d115dee17e5e91049.svg",
+    "static/media/upload.svg": "/dashboard/static/media/upload.375da0a814920938b744d5bf1bc88b19.svg",
     "static/media/play.svg": "/dashboard/static/media/play.0cc752a2907c29ea69983a2ce4c35c3d.svg",
     "static/media/health-bad.svg": "/dashboard/static/media/health-bad.f6b3a99f588b20aef147dd8cada3356f.svg",
     "static/media/health-good.svg": "/dashboard/static/media/health-good.c06d31b2b699112b161f07c13711dc20.svg",
     "static/media/health-warning.svg": "/dashboard/static/media/health-warning.47f112ef4093a598a33b1b3689b53140.svg",
     "static/media/chevron-down.svg": "/dashboard/static/media/chevron-down.7aa5319377ac93c7c5191d47d7a9bf3c.svg",
     "static/media/dropdown-arrow.svg": "/dashboard/static/media/dropdown-arrow.dc7cfa60f6881f83fa082f655b0ed1d7.svg",
-    "main.265f8660.css.map": "/dashboard/static/css/main.265f8660.css.map",
-    "main.908b1428.js.map": "/dashboard/static/js/main.908b1428.js.map"
+    "main.1230fa82.css.map": "/dashboard/static/css/main.1230fa82.css.map",
+    "main.e271f060.js.map": "/dashboard/static/js/main.e271f060.js.map"
   },
   "entrypoints": [
-    "static/css/main.265f8660.css",
-    "static/js/main.908b1428.js"
+    "static/css/main.1230fa82.css",
+    "static/js/main.e271f060.js"
   ]
 }
