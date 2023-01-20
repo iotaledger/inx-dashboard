@@ -9,7 +9,7 @@ import (
 
 	"github.com/iotaledger/hive.go/core/app"
 	"github.com/iotaledger/hive.go/core/websockethub"
-	"github.com/iotaledger/inx-app/nodebridge"
+	"github.com/iotaledger/inx-app/pkg/nodebridge"
 	"github.com/iotaledger/inx-dashboard/pkg/dashboard"
 )
 
