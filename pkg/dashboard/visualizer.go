@@ -327,67 +327,86 @@ func (v *Visualizer) ApplyConfirmedMilestoneChanged(ms *nodebridge.Milestone) {
 
 func (d *Dashboard) runVisualizerFeed() {
 
-	onVisualizerVertexCreated := events.NewClosure(func(vertex *VisualizerVertex) {
-		if !d.nodeBridge.IsNodeAlmostSynced() {
-			return
-		}
-		d.hub.BroadcastMsg(&Msg{Type: MsgTypeVisualizerVertex, Data: vertex})
-	})
-
-	onVisualizerVertexSolidUpdated := events.NewClosure(func(vertex *VisualizerVertex) {
-		if !d.nodeBridge.IsNodeAlmostSynced() {
-			return
-		}
-
-		d.hub.BroadcastMsg(
-			&Msg{
-				Type: MsgTypeVisualizerSolidInfo,
-				Data: &VisualizerMetaInfo{
-					ID: vertex.shortID,
-				},
-			},
-		)
-	})
-
-	onVisualizerVertexTipUpdated := events.NewClosure(func(vertex *VisualizerVertex) {
-		if !d.nodeBridge.IsNodeAlmostSynced() {
-			return
-		}
-
-		d.hub.BroadcastMsg(
-			&Msg{
-				Type: MsgTypeVisualizerTipInfo,
-				Data: &VisualizerTipInfo{
-					ID:    vertex.shortID,
-					IsTip: vertex.IsTip,
-				},
-			},
-		)
-	})
-
-	onVisualizerConfirmation := events.NewClosure(func(milestoneParents []string, excludedIDs []string) {
-		if !d.nodeBridge.IsNodeAlmostSynced() {
-			return
-		}
-
-		d.hub.BroadcastMsg(
-			&Msg{
-				Type: MsgTypeVisualizerConfirmedInfo,
-				Data: &VisualizerConfirmationInfo{
-					IDs:         milestoneParents,
-					ExcludedIDs: excludedIDs,
-				},
-			},
-		)
-	})
-
-	onBlockSolid := events.NewClosure(func(metadata *inx.BlockMetadata) {
-		d.visualizer.SetIsSolid(metadata.BlockId.Unwrap())
-	})
-
-	onConfirmedMilestoneChanged := events.NewClosure(d.visualizer.ApplyConfirmedMilestoneChanged)
-
 	if err := d.daemon.BackgroundWorker("Dashboard[Visualizer]", func(ctx context.Context) {
+
+		onVisualizerVertexCreated := events.NewClosure(func(vertex *VisualizerVertex) {
+			if !d.nodeBridge.IsNodeAlmostSynced() {
+				return
+			}
+
+			ctxMsg, ctxMsgCancel := context.WithTimeout(ctx, d.websocketWriteTimeout)
+			defer ctxMsgCancel()
+
+			_ = d.hub.BroadcastMsg(ctxMsg,
+				&Msg{
+					Type: MsgTypeVisualizerVertex,
+					Data: vertex,
+				},
+			)
+		})
+
+		onVisualizerVertexSolidUpdated := events.NewClosure(func(vertex *VisualizerVertex) {
+			if !d.nodeBridge.IsNodeAlmostSynced() {
+				return
+			}
+
+			ctxMsg, ctxMsgCancel := context.WithTimeout(ctx, d.websocketWriteTimeout)
+			defer ctxMsgCancel()
+
+			_ = d.hub.BroadcastMsg(ctxMsg,
+				&Msg{
+					Type: MsgTypeVisualizerSolidInfo,
+					Data: &VisualizerMetaInfo{
+						ID: vertex.shortID,
+					},
+				},
+			)
+		})
+
+		onVisualizerVertexTipUpdated := events.NewClosure(func(vertex *VisualizerVertex) {
+			if !d.nodeBridge.IsNodeAlmostSynced() {
+				return
+			}
+
+			ctxMsg, ctxMsgCancel := context.WithTimeout(ctx, d.websocketWriteTimeout)
+			defer ctxMsgCancel()
+
+			_ = d.hub.BroadcastMsg(ctxMsg,
+				&Msg{
+					Type: MsgTypeVisualizerTipInfo,
+					Data: &VisualizerTipInfo{
+						ID:    vertex.shortID,
+						IsTip: vertex.IsTip,
+					},
+				},
+			)
+		})
+
+		onVisualizerConfirmation := events.NewClosure(func(milestoneParents []string, excludedIDs []string) {
+			if !d.nodeBridge.IsNodeAlmostSynced() {
+				return
+			}
+
+			ctxMsg, ctxMsgCancel := context.WithTimeout(ctx, d.websocketWriteTimeout)
+			defer ctxMsgCancel()
+
+			_ = d.hub.BroadcastMsg(ctxMsg,
+				&Msg{
+					Type: MsgTypeVisualizerConfirmedInfo,
+					Data: &VisualizerConfirmationInfo{
+						IDs:         milestoneParents,
+						ExcludedIDs: excludedIDs,
+					},
+				},
+			)
+		})
+
+		onBlockSolid := events.NewClosure(func(metadata *inx.BlockMetadata) {
+			d.visualizer.SetIsSolid(metadata.BlockId.Unwrap())
+		})
+
+		onConfirmedMilestoneChanged := events.NewClosure(d.visualizer.ApplyConfirmedMilestoneChanged)
+
 		d.visualizer.Events.VertexCreated.Hook(onVisualizerVertexCreated)
 		defer d.visualizer.Events.VertexCreated.Detach(onVisualizerVertexCreated)
 		d.visualizer.Events.VertexSolidUpdated.Hook(onVisualizerVertexSolidUpdated)

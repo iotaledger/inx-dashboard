@@ -1,7 +1,10 @@
 package dashboard
 
 import (
+	"context"
+
 	"github.com/labstack/echo/v4"
+	"nhooyr.io/websocket"
 
 	"github.com/iotaledger/hive.go/core/generics/event"
 	"github.com/iotaledger/hive.go/core/syncutils"
@@ -47,6 +50,8 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 		}
 	}()
 
+	ctxRequest := ctx.Request().Context()
+
 	publicTopics := []WebSocketMsgType{
 		MsgTypeSyncStatus,
 		MsgTypePublicNodeStatus,
@@ -78,14 +83,17 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 		}
 		initValuesSent[topic] = struct{}{}
 
+		ctxMsg, ctxMsgCancel := context.WithTimeout(ctxRequest, d.websocketWriteTimeout)
+		defer ctxMsgCancel()
+
 		//nolint:exhaustive // false positive
 		switch topic {
 
 		case MsgTypeSyncStatus:
-			client.Send(&Msg{Type: MsgTypeSyncStatus, Data: d.getSyncStatus()})
+			_ = client.Send(ctxMsg, &Msg{Type: MsgTypeSyncStatus, Data: d.getSyncStatus()})
 
 		case MsgTypePublicNodeStatus:
-			nodeInfo, err := d.getNodeInfo()
+			nodeInfo, err := d.getNodeInfo(ctxRequest)
 			if err != nil {
 				d.LogWarnf("failed to get node info: %s", err)
 
@@ -93,31 +101,31 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 			}
 
 			data := getPublicNodeStatusByNodeInfo(nodeInfo, d.nodeBridge.IsNodeAlmostSynced())
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypePublicNodeStatus, Data: data})
+			_ = d.hub.BroadcastMsg(ctxMsg, &Msg{Type: MsgTypePublicNodeStatus, Data: data})
 
 		case MsgTypeNodeInfoExtended:
-			data, err := d.getNodeInfoExtended()
+			data, err := d.getNodeInfoExtended(ctxRequest)
 			if err != nil {
 				d.LogWarnf("failed to get extended node info: %s", err)
 
 				return
 			}
-			client.Send(&Msg{Type: MsgTypeNodeInfoExtended, Data: data})
+			_ = client.Send(ctxMsg, &Msg{Type: MsgTypeNodeInfoExtended, Data: data})
 
 		case MsgTypeGossipMetrics:
-			data, err := d.getGossipMetrics()
+			data, err := d.getGossipMetrics(ctxRequest)
 			if err != nil {
 				d.LogWarnf("failed to get gossip metrics: %s", err)
 
 				return
 			}
-			client.Send(&Msg{Type: MsgTypeGossipMetrics, Data: data})
+			_ = client.Send(ctxMsg, &Msg{Type: MsgTypeGossipMetrics, Data: data})
 
 		case MsgTypeMilestone:
 			start := d.getLatestMilestoneIndex()
 			for msIndex := start - 10; msIndex <= start; msIndex++ {
-				if milestoneIDHex, err := d.getMilestoneIDHex(msIndex); err == nil {
-					client.Send(&Msg{Type: MsgTypeMilestone, Data: &Milestone{MilestoneID: milestoneIDHex, Index: msIndex}})
+				if milestoneIDHex, err := d.getMilestoneIDHex(ctxRequest, msIndex); err == nil {
+					_ = client.Send(ctxMsg, &Msg{Type: MsgTypeMilestone, Data: &Milestone{MilestoneID: milestoneIDHex, Index: msIndex}})
 				} else {
 					d.LogWarnf("failed to get milestone %d: %s", msIndex, err)
 
@@ -126,33 +134,33 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 			}
 
 		case MsgTypePeerMetric:
-			data, err := d.getPeerInfos()
+			data, err := d.getPeerInfos(ctxRequest)
 			if err != nil {
 				d.LogWarnf("failed to get peer infos: %s", err)
 
 				return
 			}
-			client.Send(&Msg{Type: MsgTypePeerMetric, Data: data})
+			_ = client.Send(ctxMsg, &Msg{Type: MsgTypePeerMetric, Data: data})
 
 		case MsgTypeConfirmedMsMetrics:
-			data, err := d.getNodeInfo()
+			data, err := d.getNodeInfo(ctxRequest)
 			if err != nil {
 				d.LogWarnf("failed to get node info: %s", err)
 
 				return
 			}
-			client.Send(&Msg{Type: MsgTypeConfirmedMsMetrics, Data: data.Metrics})
+			_ = client.Send(ctxMsg, &Msg{Type: MsgTypeConfirmedMsMetrics, Data: data.Metrics})
 
 		case MsgTypeVisualizerVertex:
 			d.visualizer.ForEachCreated(func(vertex *VisualizerVertex) bool {
 				// don't drop the messages to fill the visualizer without missing any vertex
-				client.Send(&Msg{Type: MsgTypeVisualizerVertex, Data: vertex}, true)
+				_ = client.Send(ctxMsg, &Msg{Type: MsgTypeVisualizerVertex, Data: vertex}, true)
 
 				return true
 			}, VisualizerInitValuesCount)
 
 		case MsgTypeDatabaseSizeMetric:
-			client.Send(&Msg{Type: MsgTypeDatabaseSizeMetric, Data: d.cachedDatabaseSizeMetrics})
+			_ = client.Send(ctxMsg, &Msg{Type: MsgTypeDatabaseSizeMetric, Data: d.cachedDatabaseSizeMetrics})
 		}
 	}
 
@@ -170,7 +178,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 		d.subscriptionManager.Disconnect(event.ID)
 	}))
 
-	d.hub.ServeWebsocket(ctx.Response(), ctx.Request(),
+	return d.hub.ServeWebsocket(ctx.Response(), ctx.Request(),
 		// onCreate gets called when the client is created
 		func(client *websockethub.Client) {
 			client.FilterCallback = func(_ *websockethub.Client, data interface{}) bool {
@@ -200,7 +208,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 							return
 						}
 
-						if msg.MsgType == websockethub.BinaryMessage {
+						if msg.MsgType == websocket.MessageBinary {
 							if len(msg.Data) < 2 {
 								continue
 							}
@@ -255,6 +263,4 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 		// onDisconnect gets called when the client was disconnected
 		nil,
 	)
-
-	return nil
 }

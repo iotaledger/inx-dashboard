@@ -18,7 +18,7 @@ func (d *Dashboard) runNodeInfoFeed() {
 				return
 			}
 
-			nodeInfo, err := d.getNodeInfo()
+			nodeInfo, err := d.getNodeInfo(ctx)
 			if err != nil {
 				d.LogWarnf("failed to get node info: %s", err)
 
@@ -26,8 +26,12 @@ func (d *Dashboard) runNodeInfoFeed() {
 			}
 
 			publicNodeStatus := getPublicNodeStatusByNodeInfo(nodeInfo, d.nodeBridge.IsNodeAlmostSynced())
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypePublicNodeStatus, Data: publicNodeStatus})
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypeConfirmedMsMetrics, Data: nodeInfo.Metrics})
+
+			ctxMsg, ctxMsgCancel := context.WithTimeout(ctx, d.websocketWriteTimeout)
+			defer ctxMsgCancel()
+
+			_ = d.hub.BroadcastMsg(ctxMsg, &Msg{Type: MsgTypePublicNodeStatus, Data: publicNodeStatus})
+			_ = d.hub.BroadcastMsg(ctxMsg, &Msg{Type: MsgTypeConfirmedMsMetrics, Data: nodeInfo.Metrics})
 		}, 1*time.Second, ctx)
 		ticker.WaitForGracefulShutdown()
 	}, daemon.PriorityStopDashboard); err != nil {
@@ -43,13 +47,17 @@ func (d *Dashboard) runNodeInfoExtendedFeed() {
 				return
 			}
 
-			data, err := d.getNodeInfoExtended()
+			data, err := d.getNodeInfoExtended(ctx)
 			if err != nil {
 				d.LogWarnf("failed to get extended node info: %s", err)
 
 				return
 			}
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypeNodeInfoExtended, Data: data})
+
+			ctxMsg, ctxMsgCancel := context.WithTimeout(ctx, d.websocketWriteTimeout)
+			defer ctxMsgCancel()
+
+			_ = d.hub.BroadcastMsg(ctxMsg, &Msg{Type: MsgTypeNodeInfoExtended, Data: data})
 		}, 1*time.Second, ctx)
 		ticker.WaitForGracefulShutdown()
 	}, daemon.PriorityStopDashboard); err != nil {
@@ -58,11 +66,14 @@ func (d *Dashboard) runNodeInfoExtendedFeed() {
 }
 
 func (d *Dashboard) runSyncStatusFeed() {
-	onMilestoneIndexChanged := events.NewClosure(func(ms *nodebridge.Milestone) {
-		d.hub.BroadcastMsg(&Msg{Type: MsgTypeSyncStatus, Data: d.getSyncStatus()})
-	})
-
 	if err := d.daemon.BackgroundWorker("SyncStatus Feed", func(ctx context.Context) {
+		onMilestoneIndexChanged := events.NewClosure(func(ms *nodebridge.Milestone) {
+			ctxMsg, ctxMsgCancel := context.WithTimeout(ctx, d.websocketWriteTimeout)
+			defer ctxMsgCancel()
+
+			_ = d.hub.BroadcastMsg(ctxMsg, &Msg{Type: MsgTypeSyncStatus, Data: d.getSyncStatus()})
+		})
+
 		d.nodeBridge.Events.LatestMilestoneChanged.Hook(onMilestoneIndexChanged)
 		defer d.nodeBridge.Events.LatestMilestoneChanged.Detach(onMilestoneIndexChanged)
 		d.nodeBridge.Events.ConfirmedMilestoneChanged.Hook(onMilestoneIndexChanged)
@@ -81,13 +92,17 @@ func (d *Dashboard) runGossipMetricsFeed() {
 				return
 			}
 
-			data, err := d.getGossipMetrics()
+			data, err := d.getGossipMetrics(ctx)
 			if err != nil {
 				d.LogWarnf("failed to get gossip metrics: %s", err)
 
 				return
 			}
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypeGossipMetrics, Data: data})
+
+			ctxMsg, ctxMsgCancel := context.WithTimeout(ctx, d.websocketWriteTimeout)
+			defer ctxMsgCancel()
+
+			_ = d.hub.BroadcastMsg(ctxMsg, &Msg{Type: MsgTypeGossipMetrics, Data: data})
 		}, 1*time.Second, ctx)
 		ticker.WaitForGracefulShutdown()
 	}, daemon.PriorityStopDashboard); err != nil {
@@ -96,17 +111,22 @@ func (d *Dashboard) runGossipMetricsFeed() {
 }
 
 func (d *Dashboard) runMilestoneLiveFeed() {
-	onLatestMilestoneIndexChanged := events.NewClosure(func(ms *nodebridge.Milestone) {
-		d.hub.BroadcastMsg(&Msg{
-			Type: MsgTypeMilestone,
-			Data: &Milestone{
-				MilestoneID: ms.MilestoneID.ToHex(),
-				Index:       ms.Milestone.Index,
-			},
-		})
-	})
 
 	if err := d.daemon.BackgroundWorker("Milestones Feed", func(ctx context.Context) {
+		onLatestMilestoneIndexChanged := events.NewClosure(func(ms *nodebridge.Milestone) {
+			ctxMsg, ctxMsgCancel := context.WithTimeout(ctx, d.websocketWriteTimeout)
+			defer ctxMsgCancel()
+
+			_ = d.hub.BroadcastMsg(ctxMsg,
+				&Msg{
+					Type: MsgTypeMilestone,
+					Data: &Milestone{
+						MilestoneID: ms.MilestoneID.ToHex(),
+						Index:       ms.Milestone.Index,
+					},
+				})
+		})
+
 		d.nodeBridge.Events.LatestMilestoneChanged.Hook(onLatestMilestoneIndexChanged)
 		defer d.nodeBridge.Events.LatestMilestoneChanged.Detach(onLatestMilestoneIndexChanged)
 		<-ctx.Done()
@@ -124,11 +144,15 @@ func (d *Dashboard) runPeerMetricsFeed() {
 				return
 			}
 
-			data, err := d.getPeerInfos()
+			data, err := d.getPeerInfos(ctx)
 			if err != nil {
 				return
 			}
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypePeerMetric, Data: data})
+
+			ctxMsg, ctxMsgCancel := context.WithTimeout(ctx, d.websocketWriteTimeout)
+			defer ctxMsgCancel()
+
+			_ = d.hub.BroadcastMsg(ctxMsg, &Msg{Type: MsgTypePeerMetric, Data: data})
 		}, 1*time.Second, ctx)
 		ticker.WaitForGracefulShutdown()
 	}, daemon.PriorityStopDashboard); err != nil {

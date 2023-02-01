@@ -19,25 +19,25 @@ func getPublicNodeStatusByNodeInfo(nodeInfo *nodeclient.InfoResponse, isAlmostSy
 	}
 }
 
-func (d *Dashboard) getNodeInfo() (*nodeclient.InfoResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), nodeTimeout)
-	defer cancel()
+func (d *Dashboard) getNodeInfo(ctx context.Context) (*nodeclient.InfoResponse, error) {
+	ctxNode, ctxNodecancel := context.WithTimeout(ctx, nodeTimeout)
+	defer ctxNodecancel()
 
-	return d.nodeClient.Info(ctx)
+	return d.nodeClient.Info(ctxNode)
 }
 
-func (d *Dashboard) getNodeInfoExtended() (*NodeInfoExtended, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), nodeTimeout)
-	defer cancel()
+func (d *Dashboard) getNodeInfoExtended(ctx context.Context) (*NodeInfoExtended, error) {
+	ctxNode, ctxNodecancel := context.WithTimeout(ctx, nodeTimeout)
+	defer ctxNodecancel()
 
-	return d.metricsClient.NodeInfoExtended(ctx)
+	return d.metricsClient.NodeInfoExtended(ctxNode)
 }
 
-func (d *Dashboard) getPeerInfos() ([]*nodeclient.PeerResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), nodeTimeout)
-	defer cancel()
+func (d *Dashboard) getPeerInfos(ctx context.Context) ([]*nodeclient.PeerResponse, error) {
+	ctxNode, ctxNodecancel := context.WithTimeout(ctx, nodeTimeout)
+	defer ctxNodecancel()
 
-	return d.nodeClient.Peers(ctx)
+	return d.nodeClient.Peers(ctxNode)
 }
 
 func (d *Dashboard) getSyncStatus() *SyncStatus {
@@ -47,30 +47,30 @@ func (d *Dashboard) getSyncStatus() *SyncStatus {
 	}
 }
 
-func (d *Dashboard) getGossipMetrics() (*GossipMetrics, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), nodeTimeout)
-	defer cancel()
+func (d *Dashboard) getGossipMetrics(ctx context.Context) (*GossipMetrics, error) {
+	ctxNode, ctxNodecancel := context.WithTimeout(ctx, nodeTimeout)
+	defer ctxNodecancel()
 
-	return d.metricsClient.GossipMetrics(ctx)
+	return d.metricsClient.GossipMetrics(ctxNode)
 }
 
-func (d *Dashboard) getDatabaseSizeMetric() (*DatabaseSizesMetric, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), nodeTimeout)
-	defer cancel()
+func (d *Dashboard) getDatabaseSizeMetric(ctx context.Context) (*DatabaseSizesMetric, error) {
+	ctxNode, ctxNodecancel := context.WithTimeout(ctx, nodeTimeout)
+	defer ctxNodecancel()
 
-	return d.metricsClient.DatabaseSizes(ctx)
+	return d.metricsClient.DatabaseSizes(ctxNode)
 }
 
 func (d *Dashboard) getLatestMilestoneIndex() uint32 {
 	return d.nodeBridge.LatestMilestoneIndex()
 }
 
-func (d *Dashboard) getMilestoneIDHex(index uint32) (string, error) {
+func (d *Dashboard) getMilestoneIDHex(ctx context.Context, index uint32) (string, error) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	ctxNode, ctxNodecancel := context.WithTimeout(ctx, nodeTimeout)
+	defer ctxNodecancel()
 
-	milestone, err := d.nodeBridge.Milestone(ctx, index)
+	milestone, err := d.nodeBridge.Milestone(ctxNode, index)
 	if err != nil {
 		return "", err
 	}
