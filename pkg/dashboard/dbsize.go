@@ -8,8 +8,8 @@ import (
 	"github.com/iotaledger/inx-dashboard/pkg/daemon"
 )
 
-func (d *Dashboard) currentDatabaseSize() *DatabaseSizesMetric {
-	newMetric, err := d.getDatabaseSizeMetric()
+func (d *Dashboard) currentDatabaseSize(ctx context.Context) *DatabaseSizesMetric {
+	newMetric, err := d.getDatabaseSizeMetric(ctx)
 	if err != nil {
 		d.LogWarnf("error in database size calculation: %s", err)
 
@@ -25,18 +25,20 @@ func (d *Dashboard) currentDatabaseSize() *DatabaseSizesMetric {
 }
 
 func (d *Dashboard) runDatabaseSizeCollector() {
-
-	// Gather first metric so we have a starting point
-	d.currentDatabaseSize()
-
 	if err := d.daemon.BackgroundWorker("Dashboard[DBSize]", func(ctx context.Context) {
+		// Gather first metric so we have a starting point
+		d.currentDatabaseSize(ctx)
+
 		ticker := timeutil.NewTicker(func() {
-			dbSizeMetric := d.currentDatabaseSize()
+			dbSizeMetric := d.currentDatabaseSize(ctx)
 			if dbSizeMetric == nil {
 				return
 			}
 
-			d.hub.BroadcastMsg(&Msg{Type: MsgTypeDatabaseSizeMetric, Data: []*DatabaseSizesMetric{dbSizeMetric}})
+			ctxMsg, ctxMsgCancel := context.WithTimeout(ctx, d.websocketWriteTimeout)
+			defer ctxMsgCancel()
+
+			_ = d.hub.BroadcastMsg(ctxMsg, &Msg{Type: MsgTypeDatabaseSizeMetric, Data: []*DatabaseSizesMetric{dbSizeMetric}})
 		}, 1*time.Minute, ctx)
 		ticker.WaitForGracefulShutdown()
 	}, daemon.PriorityStopDashboard); err != nil {

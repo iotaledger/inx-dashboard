@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"encoding/hex"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -52,6 +53,7 @@ type Dashboard struct {
 	authRateLimitPeriod      time.Duration
 	authRateLimitMaxRequests int
 	authRateLimitMaxBurst    int
+	websocketWriteTimeout    time.Duration
 	debugLogRequests         bool
 
 	basicAuth      *basicauth.BasicAuth
@@ -144,6 +146,12 @@ func WithAuthRateLimitMaxBurst(authRateLimitMaxBurst int) options.Option[Dashboa
 	}
 }
 
+func WithWebsocketWriteTimeout(writeTimeout time.Duration) options.Option[Dashboard] {
+	return func(d *Dashboard) {
+		d.websocketWriteTimeout = writeTimeout
+	}
+}
+
 func WithDebugLogRequests(debugLogRequests bool) options.Option[Dashboard] {
 	return func(d *Dashboard) {
 		d.debugLogRequests = debugLogRequests
@@ -176,6 +184,7 @@ func New(
 		authRateLimitPeriod:      1 * time.Minute,
 		authRateLimitMaxRequests: 20,
 		authRateLimitMaxBurst:    30,
+		websocketWriteTimeout:    5 * time.Second,
 		debugLogRequests:         false,
 
 		visualizer:          NewVisualizer(log, nodeBridge, VisualizerCapacity),
@@ -202,7 +211,7 @@ func (d *Dashboard) checkVisualizerSubscriptions() {
 		MsgTypeVisualizerConfirmedInfo,
 		MsgTypeVisualizerMilestoneInfo,
 		MsgTypeVisualizerTipInfo} {
-		if d.subscriptionManager.HasSubscribers(topic) {
+		if d.subscriptionManager.TopicHasSubscribers(topic) {
 			active = true
 
 			break
@@ -266,19 +275,26 @@ func (d *Dashboard) Run() {
 	e := httpserver.NewEcho(d.Logger(), nil, d.debugLogRequests)
 	d.setupRoutes(e)
 
-	go func() {
+	if err := d.daemon.BackgroundWorker("Dashboard", func(ctx context.Context) {
+		e.Server.BaseContext = func(_ net.Listener) context.Context {
+			// set BaseContext to be the same as the plugin, so that requests being processed don't hang the shutdown procedure
+			return ctx
+		}
+
 		d.LogInfof("You can now access the dashboard using: http://%s", d.bindAddress)
 
 		if err := e.Start(d.bindAddress); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			d.LogWarnf("Stopped dashboard server due to an error (%s)", err)
 		}
-	}()
+	}, daemon.PriorityStopDashboard); err != nil {
+		d.LogPanicf("failed to start worker: %s", err)
+	}
 
-	if err := d.daemon.BackgroundWorker("Dashboard[WSSend]", func(ctx context.Context) {
+	if err := d.daemon.BackgroundWorker("WebsocketHub", func(ctx context.Context) {
 		go d.hub.Run(ctx)
 		<-ctx.Done()
-		d.LogInfo("Stopping Dashboard[WSSend] ...")
-		d.LogInfo("Stopping Dashboard[WSSend] ... done")
+		d.LogInfo("Stopping WebsocketHub ...")
+		d.LogInfo("Stopping WebsocketHub ... done")
 	}, daemon.PriorityStopDashboard); err != nil {
 		d.LogPanicf("failed to start worker: %s", err)
 	}

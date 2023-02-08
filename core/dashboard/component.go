@@ -1,11 +1,10 @@
 package dashboard
 
 import (
-	"net/http"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"go.uber.org/dig"
+	"nhooyr.io/websocket"
 
 	"github.com/iotaledger/hive.go/core/app"
 	"github.com/iotaledger/hive.go/core/websockethub"
@@ -16,7 +15,7 @@ import (
 const (
 	broadcastQueueSize            = 20000
 	clientSendChannelSize         = 1000
-	webSocketWriteTimeout         = time.Duration(3) * time.Second
+	webSocketWriteTimeout         = time.Duration(5) * time.Second
 	maxWebsocketMessageSize int64 = 400 + maxDashboardAuthUsernameSize + 10 // 10 buffer due to variable JWT lengths
 )
 
@@ -60,16 +59,14 @@ func provide(c *dig.Container) error {
 			CoreComponent.LogErrorfAndExit("%s has a max length of %d", CoreComponent.App().Config().GetParameterPath(&(ParamsDashboard.Auth.Username)), maxDashboardAuthUsernameSize)
 		}
 
-		upgrader := &websocket.Upgrader{
-			HandshakeTimeout: webSocketWriteTimeout,
-			CheckOrigin:      func(r *http.Request) bool { return true }, // allow any origin for websocket connections
+		acceptOptions := &websocket.AcceptOptions{
+			InsecureSkipVerify: true, // allow any origin for websocket connections
 			// Disable compression due to incompatibilities with latest Safari browsers:
 			// https://github.com/tilt-dev/tilt/issues/4746
-			// https://github.com/gorilla/websocket/issues/731
-			EnableCompression: false,
+			CompressionMode: websocket.CompressionDisabled,
 		}
 
-		hub := websockethub.NewHub(CoreComponent.Logger(), upgrader, broadcastQueueSize, clientSendChannelSize, maxWebsocketMessageSize)
+		hub := websockethub.NewHub(CoreComponent.Logger(), acceptOptions, broadcastQueueSize, clientSendChannelSize, maxWebsocketMessageSize)
 
 		CoreComponent.LogInfo("Setting up dashboard ...")
 
@@ -91,6 +88,7 @@ func provide(c *dig.Container) error {
 			dashboard.WithAuthRateLimitPeriod(ParamsDashboard.Auth.RateLimit.Period),
 			dashboard.WithAuthRateLimitMaxRequests(ParamsDashboard.Auth.RateLimit.MaxRequests),
 			dashboard.WithAuthRateLimitMaxBurst(ParamsDashboard.Auth.RateLimit.MaxBurst),
+			dashboard.WithWebsocketWriteTimeout(webSocketWriteTimeout),
 			dashboard.WithDebugLogRequests(ParamsDashboard.DebugRequestLoggerEnabled),
 		)
 	}); err != nil {
