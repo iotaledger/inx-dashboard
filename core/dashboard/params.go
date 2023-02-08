@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	maxDashboardAuthUsernameSize = 25
+	maxDashboardAuthUsernameSize = 70
 )
 
 // ParametersDashboard contains the definition of the parameters used by WarpSync.
