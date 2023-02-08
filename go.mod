@@ -5,8 +5,8 @@ go 1.19
 require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/iancoleman/orderedmap v0.2.0
-	github.com/iotaledger/hive.go/core v1.0.0-rc.2.0.20230131175029-3fe9778d3769
-	github.com/iotaledger/inx-app v1.0.0-rc.2
+	github.com/iotaledger/hive.go/core v1.0.0-rc.3
+	github.com/iotaledger/inx-app v1.0.0-rc.3
 	github.com/iotaledger/inx/go v1.0.0-rc.1
 	github.com/iotaledger/iota.go/v3 v3.0.0-rc.1
 	github.com/labstack/echo/v4 v4.10.0
@@ -34,7 +34,7 @@ require (
 	github.com/ethereum/go-ethereum v1.10.26 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/getsentry/sentry-go v0.17.0 // indirect
+	github.com/getsentry/sentry-go v0.18.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-github v17.0.0+incompatible // indirect
@@ -75,11 +75,11 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.6.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
-	google.golang.org/genproto v0.0.0-20230131230820-1c016267d619 // indirect
-	google.golang.org/grpc v1.52.3 // indirect
+	google.golang.org/genproto v0.0.0-20230202175211-008b39050e57 // indirect
+	google.golang.org/grpc v1.53.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
