@@ -350,9 +350,9 @@ func (d *Dashboard) forwardRequest(c echo.Context) error {
 		req.URL.User = c.Request().URL.User
 	}
 
-	contentType := c.Request().Header.Get("Content-Type")
+	contentType := c.Request().Header.Get(echo.HeaderContentType)
 	if contentType != "" {
-		req.Header.Set("Content-Type", contentType)
+		req.Header.Set(echo.HeaderContentType, contentType)
 	}
 
 	// make the request
