@@ -276,16 +276,34 @@ func (d *Dashboard) Run() {
 	d.setupRoutes(e)
 
 	if err := d.daemon.BackgroundWorker("Dashboard", func(ctx context.Context) {
-		e.Server.BaseContext = func(_ net.Listener) context.Context {
-			// set BaseContext to be the same as the plugin, so that requests being processed don't hang the shutdown procedure
+		d.LogInfo("Starting Dashboard server ...")
+
+		e.Server.BaseContext = func(l net.Listener) context.Context {
+			// set BaseContext to be the same as the worker,
+			// so that requests being processed don't hang the shutdown procedure
 			return ctx
 		}
 
-		d.LogInfof("You can now access the dashboard using: http://%s", d.bindAddress)
+		go func() {
+			d.LogInfof("You can now access the dashboard using: http://%s", d.bindAddress)
+			if err := e.Start(d.bindAddress); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				d.LogErrorfAndExit("Stopped dashboard server due to an error (%s)", err)
+			}
+		}()
 
-		if err := e.Start(d.bindAddress); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			d.LogWarnf("Stopped dashboard server due to an error (%s)", err)
+		d.LogInfo("Starting Dashboard server ... done")
+		<-ctx.Done()
+		d.LogInfo("Stopping Dashboard server ...")
+
+		shutdownCtx, shutdownCtxCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCtxCancel()
+
+		//nolint:contextcheck // false positive
+		if err := e.Shutdown(shutdownCtx); err != nil {
+			d.LogWarn(err)
 		}
+
+		d.LogInfo("Stopping Dashboard server... done")
 	}, daemon.PriorityStopDashboard); err != nil {
 		d.LogPanicf("failed to start worker: %s", err)
 	}
