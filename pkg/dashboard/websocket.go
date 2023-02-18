@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"context"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"nhooyr.io/websocket"
@@ -10,6 +11,10 @@ import (
 	"github.com/iotaledger/hive.go/core/syncutils"
 	"github.com/iotaledger/hive.go/core/websockethub"
 	"github.com/iotaledger/inx-dashboard/pkg/jwt"
+)
+
+var (
+	timeoutNodeInfos = 2 * time.Second
 )
 
 type WebSocketMsgType byte
@@ -50,8 +55,6 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 		}
 	}()
 
-	ctxRequest := ctx.Request().Context()
-
 	publicTopics := []WebSocketMsgType{
 		MsgTypeSyncStatus,
 		MsgTypePublicNodeStatus,
@@ -83,7 +86,10 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 		}
 		initValuesSent[topic] = struct{}{}
 
-		ctxMsg, ctxMsgCancel := context.WithTimeout(ctxRequest, d.websocketWriteTimeout)
+		ctxNodeInfos, ctxNodeInfosCancel := context.WithTimeout(client.Context(), timeoutNodeInfos)
+		defer ctxNodeInfosCancel()
+
+		ctxMsg, ctxMsgCancel := context.WithTimeout(client.Context(), d.websocketWriteTimeout)
 		defer ctxMsgCancel()
 
 		//nolint:exhaustive // false positive
@@ -93,7 +99,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 			_ = client.Send(ctxMsg, &Msg{Type: MsgTypeSyncStatus, Data: d.getSyncStatus()})
 
 		case MsgTypePublicNodeStatus:
-			nodeInfo, err := d.getNodeInfo(ctxRequest)
+			nodeInfo, err := d.getNodeInfo(ctxNodeInfos)
 			if err != nil {
 				d.LogWarnf("failed to get node info: %s", err)
 
@@ -104,7 +110,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 			_ = d.hub.BroadcastMsg(ctxMsg, &Msg{Type: MsgTypePublicNodeStatus, Data: data})
 
 		case MsgTypeNodeInfoExtended:
-			data, err := d.getNodeInfoExtended(ctxRequest)
+			data, err := d.getNodeInfoExtended(ctxNodeInfos)
 			if err != nil {
 				d.LogWarnf("failed to get extended node info: %s", err)
 
@@ -113,7 +119,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 			_ = client.Send(ctxMsg, &Msg{Type: MsgTypeNodeInfoExtended, Data: data})
 
 		case MsgTypeGossipMetrics:
-			data, err := d.getGossipMetrics(ctxRequest)
+			data, err := d.getGossipMetrics(ctxNodeInfos)
 			if err != nil {
 				d.LogWarnf("failed to get gossip metrics: %s", err)
 
@@ -124,7 +130,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 		case MsgTypeMilestone:
 			start := d.getLatestMilestoneIndex()
 			for msIndex := start - 10; msIndex <= start; msIndex++ {
-				if milestoneIDHex, err := d.getMilestoneIDHex(ctxRequest, msIndex); err == nil {
+				if milestoneIDHex, err := d.getMilestoneIDHex(ctxNodeInfos, msIndex); err == nil {
 					_ = client.Send(ctxMsg, &Msg{Type: MsgTypeMilestone, Data: &Milestone{MilestoneID: milestoneIDHex, Index: msIndex}})
 				} else {
 					d.LogWarnf("failed to get milestone %d: %s", msIndex, err)
@@ -134,7 +140,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 			}
 
 		case MsgTypePeerMetric:
-			data, err := d.getPeerInfos(ctxRequest)
+			data, err := d.getPeerInfos(ctxNodeInfos)
 			if err != nil {
 				d.LogWarnf("failed to get peer infos: %s", err)
 
@@ -143,7 +149,7 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 			_ = client.Send(ctxMsg, &Msg{Type: MsgTypePeerMetric, Data: data})
 
 		case MsgTypeConfirmedMsMetrics:
-			data, err := d.getNodeInfo(ctxRequest)
+			data, err := d.getNodeInfo(ctxNodeInfos)
 			if err != nil {
 				d.LogWarnf("failed to get node info: %s", err)
 
@@ -197,59 +203,67 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 
 			go func() {
 				for {
+					// we need to nest the client.ReceiveChan into the default case because
+					// the select cases are executed in random order if multiple
+					// conditions are true at the time of entry in the select case.
 					select {
 					case <-client.ExitSignal:
 						// client was disconnected
 						return
-
-					case msg, ok := <-client.ReceiveChan:
-						if !ok {
+					default:
+						select {
+						case <-client.ExitSignal:
 							// client was disconnected
 							return
-						}
-
-						if msg.MsgType == websocket.MessageBinary {
-							if len(msg.Data) < 2 {
-								continue
+						case msg, ok := <-client.ReceiveChan:
+							if !ok {
+								// client was disconnected
+								return
 							}
 
-							cmd := msg.Data[0]
-							topic := WebSocketMsgType(msg.Data[1])
-
-							if cmd == WebsocketCmdRegister {
-
-								if isProtectedTopic(topic) {
-									// Check for the presence of a JWT and verify it
-									if len(msg.Data) < 3 {
-										// Dot not allow unsecure subscriptions to protected topics
-										continue
-									}
-									token := string(msg.Data[2:])
-									if !d.jwtAuth.VerifyJWT(token, func(claims *jwt.AuthClaims) bool {
-										return true
-									}) {
-										// Dot not allow unsecure subscriptions to protected topics
-										continue
-									}
+							if msg.MsgType == websocket.MessageBinary {
+								if len(msg.Data) < 2 {
+									continue
 								}
 
-								// register topic fo this client
-								d.subscriptionManager.Subscribe(client.ID(), topic)
+								cmd := msg.Data[0]
+								topic := WebSocketMsgType(msg.Data[1])
 
-								topicsLock.Lock()
-								registeredTopics[topic] = struct{}{}
-								topicsLock.Unlock()
+								if cmd == WebsocketCmdRegister {
 
-								sendInitValue(client, initValuesSent, topic)
+									if isProtectedTopic(topic) {
+										// Check for the presence of a JWT and verify it
+										if len(msg.Data) < 3 {
+											// Dot not allow unsecure subscriptions to protected topics
+											continue
+										}
+										token := string(msg.Data[2:])
+										if !d.jwtAuth.VerifyJWT(token, func(claims *jwt.AuthClaims) bool {
+											return true
+										}) {
+											// Dot not allow unsecure subscriptions to protected topics
+											continue
+										}
+									}
 
-							} else if cmd == WebsocketCmdUnregister {
+									// register topic fo this client
+									d.subscriptionManager.Subscribe(client.ID(), topic)
 
-								// unregister topic fo this client
-								d.subscriptionManager.Unsubscribe(client.ID(), topic)
+									topicsLock.Lock()
+									registeredTopics[topic] = struct{}{}
+									topicsLock.Unlock()
 
-								topicsLock.Lock()
-								delete(registeredTopics, topic)
-								topicsLock.Unlock()
+									sendInitValue(client, initValuesSent, topic)
+
+								} else if cmd == WebsocketCmdUnregister {
+
+									// unregister topic fo this client
+									d.subscriptionManager.Unsubscribe(client.ID(), topic)
+
+									topicsLock.Lock()
+									delete(registeredTopics, topic)
+									topicsLock.Unlock()
+								}
 							}
 						}
 					}
