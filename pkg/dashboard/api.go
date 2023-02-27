@@ -88,7 +88,7 @@ func (d *Dashboard) apiMiddlewares() []echo.MiddlewareFunc {
 	protectedRoutesRegEx := compileRoutesAsRegexes(protectedRoutes)
 
 	matchPublic := func(c echo.Context) bool {
-		loweredPath := strings.ToLower(c.Request().URL.EscapedPath())
+		loweredPath := strings.ToLower(c.Request().RequestURI)
 
 		for _, reg := range publicRoutesRegEx {
 			if reg.MatchString(loweredPath) {
@@ -100,7 +100,7 @@ func (d *Dashboard) apiMiddlewares() []echo.MiddlewareFunc {
 	}
 
 	matchProtected := func(c echo.Context) bool {
-		loweredPath := strings.ToLower(c.Request().URL.EscapedPath())
+		loweredPath := strings.ToLower(c.Request().RequestURI)
 
 		for _, reg := range protectedRoutesRegEx {
 			if reg.MatchString(loweredPath) {
@@ -201,12 +201,6 @@ func (d *Dashboard) setupRoutes(e *echo.Echo) {
 				id := ctx.RealIP()
 
 				return id, nil
-			},
-			ErrorHandler: func(context echo.Context, err error) error {
-				return context.JSON(http.StatusForbidden, nil)
-			},
-			DenyHandler: func(context echo.Context, identifier string, err error) error {
-				return context.JSON(http.StatusTooManyRequests, nil)
 			},
 		}
 
