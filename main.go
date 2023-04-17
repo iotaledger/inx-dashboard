@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/iotaledger/inx-dashboard/core/app"
+	"github.com/iotaledger/inx-dashboard/components/app"
 )
 
 func main() {
