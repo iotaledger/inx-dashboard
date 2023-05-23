@@ -37,3 +37,25 @@ Go to the root directory of the repo and call
 7. ```bash
    ./build.sh && go build
    ```
+
+## Setting password for login
+
+To generate a password hash, and it's salt you need to clone and build <a href=https://github.com/iotaledger/hornet>Hornet</a>
+
+After building use hornet tools to generate the password hash:
+```bash
+./hornet tools pwd-hash
+```
+
+You can set the hash and the salt with these parameters:
+```bash
+./inx-dashboard --dashboard.auth.passwordHash YOURHASH --dashboard.auth.passwordSalt YOURSALT
+```
+
+Do not forget to change username with ```--dashboard.auth.username```
+
+## Getting full list of parameters
+
+```bash
+./inx-dashboard --help --full
+```
