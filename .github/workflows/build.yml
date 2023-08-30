@@ -19,6 +19,8 @@ jobs:
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
+        with:
+          submodules: 'true'
 
       - name: Build
         run: go build -v .
@@ -29,6 +31,8 @@ jobs:
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
+        with:
+          submodules: 'true'
 
       - name: Build Docker image
         run: docker build . --file Dockerfile --tag inx-dashboard:latest
