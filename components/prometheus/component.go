@@ -13,23 +13,19 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/dig"
 
-	"github.com/iotaledger/hive.go/core/app"
+	"github.com/iotaledger/hive.go/app"
 	"github.com/iotaledger/inx-dashboard/pkg/daemon"
 )
 
 func init() {
-	Plugin = &app.Plugin{
-		Component: &app.Component{
-			Name:      "Prometheus",
-			DepsFunc:  func(cDeps dependencies) { deps = cDeps },
-			Params:    params,
-			Provide:   provide,
-			Configure: configure,
-			Run:       run,
-		},
-		IsEnabled: func() bool {
-			return ParamsPrometheus.Enabled
-		},
+	Component = &app.Component{
+		Name:      "Prometheus",
+		DepsFunc:  func(cDeps dependencies) { deps = cDeps },
+		Params:    params,
+		IsEnabled: func(_ *dig.Container) bool { return ParamsPrometheus.Enabled },
+		Provide:   provide,
+		Configure: configure,
+		Run:       run,
 	}
 }
 
@@ -39,8 +35,8 @@ type dependencies struct {
 }
 
 var (
-	Plugin *app.Plugin
-	deps   dependencies
+	Component *app.Component
+	deps      dependencies
 )
 
 func provide(c *dig.Container) error {
@@ -87,18 +83,18 @@ func configure() error {
 }
 
 func run() error {
-	return Plugin.Daemon().BackgroundWorker("Prometheus exporter", func(ctx context.Context) {
-		Plugin.LogInfo("Starting Prometheus exporter ... done")
+	return Component.Daemon().BackgroundWorker("Prometheus exporter", func(ctx context.Context) {
+		Component.LogInfo("Starting Prometheus exporter ... done")
 
 		go func() {
-			Plugin.LogInfof("You can now access the Prometheus exporter using: http://%s/metrics", ParamsPrometheus.BindAddress)
+			Component.LogInfof("You can now access the Prometheus exporter using: http://%s/metrics", ParamsPrometheus.BindAddress)
 			if err := deps.PrometheusEcho.Start(ParamsPrometheus.BindAddress); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				Plugin.LogWarnf("Stopped Prometheus exporter due to an error (%s)", err)
+				Component.LogWarnf("Stopped Prometheus exporter due to an error (%s)", err)
 			}
 		}()
 
 		<-ctx.Done()
-		Plugin.LogInfo("Stopping Prometheus exporter ...")
+		Component.LogInfo("Stopping Prometheus exporter ...")
 
 		shutdownCtx, shutdownCtxCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer shutdownCtxCancel()
@@ -106,10 +102,10 @@ func run() error {
 		//nolint:contextcheck // false positive
 		err := deps.PrometheusEcho.Shutdown(shutdownCtx)
 		if err != nil {
-			Plugin.LogWarn(err)
+			Component.LogWarn(err)
 		}
 
-		Plugin.LogInfo("Stopping Prometheus exporter ... done")
+		Component.LogInfo("Stopping Prometheus exporter ... done")
 	}, daemon.PriorityStopPrometheus)
 }
 

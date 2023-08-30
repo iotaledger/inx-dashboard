@@ -7,9 +7,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"nhooyr.io/websocket"
 
-	"github.com/iotaledger/hive.go/core/generics/event"
-	"github.com/iotaledger/hive.go/core/syncutils"
-	"github.com/iotaledger/hive.go/core/websockethub"
+	"github.com/iotaledger/hive.go/runtime/syncutils"
+	"github.com/iotaledger/hive.go/web/websockethub"
 	"github.com/iotaledger/inx-dashboard/pkg/jwt"
 )
 
@@ -173,16 +172,6 @@ func (d *Dashboard) websocketRoute(ctx echo.Context) error {
 	topicsLock := syncutils.RWMutex{}
 	registeredTopics := make(map[WebSocketMsgType]struct{})
 	initValuesSent := make(map[WebSocketMsgType]struct{})
-
-	d.hub.Events().ClientConnected.Attach(event.NewClosure(func(event *websockethub.ClientConnectionEvent) {
-		d.LogDebugf("WebSocket client (ID: %d) connection established", event.ID)
-		d.subscriptionManager.Connect(event.ID)
-	}))
-
-	d.hub.Events().ClientDisconnected.Attach(event.NewClosure(func(event *websockethub.ClientConnectionEvent) {
-		d.LogDebugf("WebSocket client (ID: %d) connection closed", event.ID)
-		d.subscriptionManager.Disconnect(event.ID)
-	}))
 
 	return d.hub.ServeWebsocket(ctx.Response(), ctx.Request(),
 		// onCreate gets called when the client is created

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/iotaledger/hive.go/core/events"
-	"github.com/iotaledger/hive.go/core/timeutil"
+	"github.com/iotaledger/hive.go/lo"
+	"github.com/iotaledger/hive.go/runtime/timeutil"
 	"github.com/iotaledger/inx-app/pkg/nodebridge"
 	"github.com/iotaledger/inx-dashboard/pkg/daemon"
 )
@@ -67,18 +67,20 @@ func (d *Dashboard) runNodeInfoExtendedFeed() {
 
 func (d *Dashboard) runSyncStatusFeed() {
 	if err := d.daemon.BackgroundWorker("SyncStatus Feed", func(ctx context.Context) {
-		onMilestoneIndexChanged := events.NewClosure(func(ms *nodebridge.Milestone) {
+		onMilestoneIndexChanged := func(ms *nodebridge.Milestone) {
 			ctxMsg, ctxMsgCancel := context.WithTimeout(ctx, d.websocketWriteTimeout)
 			defer ctxMsgCancel()
 
 			_ = d.hub.BroadcastMsg(ctxMsg, &Msg{Type: MsgTypeSyncStatus, Data: d.getSyncStatus()})
-		})
+		}
 
-		d.nodeBridge.Events.LatestMilestoneChanged.Hook(onMilestoneIndexChanged)
-		defer d.nodeBridge.Events.LatestMilestoneChanged.Detach(onMilestoneIndexChanged)
-		d.nodeBridge.Events.ConfirmedMilestoneChanged.Hook(onMilestoneIndexChanged)
-		defer d.nodeBridge.Events.ConfirmedMilestoneChanged.Detach(onMilestoneIndexChanged)
+		// register events
+		unhook := lo.Batch(
+			d.nodeBridge.Events.LatestMilestoneChanged.Hook(onMilestoneIndexChanged).Unhook,
+			d.nodeBridge.Events.ConfirmedMilestoneChanged.Hook(onMilestoneIndexChanged).Unhook,
+		)
 		<-ctx.Done()
+		unhook()
 	}, daemon.PriorityStopDashboard); err != nil {
 		d.LogPanicf("failed to start worker: %s", err)
 	}
@@ -113,7 +115,7 @@ func (d *Dashboard) runGossipMetricsFeed() {
 func (d *Dashboard) runMilestoneLiveFeed() {
 
 	if err := d.daemon.BackgroundWorker("Milestones Feed", func(ctx context.Context) {
-		onLatestMilestoneIndexChanged := events.NewClosure(func(ms *nodebridge.Milestone) {
+		onLatestMilestoneIndexChanged := func(ms *nodebridge.Milestone) {
 			ctxMsg, ctxMsgCancel := context.WithTimeout(ctx, d.websocketWriteTimeout)
 			defer ctxMsgCancel()
 
@@ -125,11 +127,11 @@ func (d *Dashboard) runMilestoneLiveFeed() {
 						Index:       ms.Milestone.Index,
 					},
 				})
-		})
+		}
 
-		d.nodeBridge.Events.LatestMilestoneChanged.Hook(onLatestMilestoneIndexChanged)
-		defer d.nodeBridge.Events.LatestMilestoneChanged.Detach(onLatestMilestoneIndexChanged)
+		unhook := d.nodeBridge.Events.LatestMilestoneChanged.Hook(onLatestMilestoneIndexChanged).Unhook
 		<-ctx.Done()
+		unhook()
 	}, daemon.PriorityStopDashboard); err != nil {
 		d.LogPanicf("failed to start worker: %s", err)
 	}

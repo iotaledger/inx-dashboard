@@ -8,8 +8,9 @@ import (
 	"github.com/iancoleman/orderedmap"
 	"go.uber.org/atomic"
 
-	"github.com/iotaledger/hive.go/core/events"
-	"github.com/iotaledger/hive.go/core/logger"
+	"github.com/iotaledger/hive.go/lo"
+	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/runtime/event"
 	"github.com/iotaledger/inx-app/pkg/nodebridge"
 	"github.com/iotaledger/inx-dashboard/pkg/daemon"
 	inx "github.com/iotaledger/inx/go"
@@ -19,16 +20,6 @@ import (
 const (
 	VisualizerIDLength = 10
 )
-
-func VertexCaller(handler interface{}, params ...interface{}) {
-	//nolint:forcetypeassert // we will replace that with generic events anyway
-	handler.(func(*VisualizerVertex))(params[0].(*VisualizerVertex))
-}
-
-func ConfirmationCaller(handler interface{}, params ...interface{}) {
-	//nolint:forcetypeassert // we will replace that with generic events anyway
-	handler.(func(milestoneParents []string, excludedIDs []string))(params[0].([]string), params[1].([]string))
-}
 
 type Visualizer struct {
 	sync.RWMutex
@@ -51,10 +42,11 @@ type Visualizer struct {
 }
 
 type VisualizerEvents struct {
-	VertexCreated      *events.Event
-	VertexSolidUpdated *events.Event
-	VertexTipUpdated   *events.Event
-	Confirmation       *events.Event
+	VertexCreated      *event.Event1[*VisualizerVertex]
+	VertexSolidUpdated *event.Event1[*VisualizerVertex]
+	VertexTipUpdated   *event.Event1[*VisualizerVertex]
+	// params: milestoneParents []string, excludedIDs []string
+	Confirmation *event.Event2[[]string, []string]
 }
 
 func NewVisualizer(log *logger.Logger, nodeBridge *nodebridge.NodeBridge, capacity int) *Visualizer {
@@ -66,10 +58,10 @@ func NewVisualizer(log *logger.Logger, nodeBridge *nodebridge.NodeBridge, capaci
 		running:       atomic.NewBool(false),
 		active:        atomic.NewBool(false),
 		Events: &VisualizerEvents{
-			VertexCreated:      events.NewEvent(VertexCaller),
-			VertexSolidUpdated: events.NewEvent(VertexCaller),
-			VertexTipUpdated:   events.NewEvent(VertexCaller),
-			Confirmation:       events.NewEvent(ConfirmationCaller),
+			VertexCreated:      event.New1[*VisualizerVertex](),
+			VertexSolidUpdated: event.New1[*VisualizerVertex](),
+			VertexTipUpdated:   event.New1[*VisualizerVertex](),
+			Confirmation:       event.New2[[]string, []string](),
 		},
 	}
 }
@@ -329,7 +321,7 @@ func (d *Dashboard) runVisualizerFeed() {
 
 	if err := d.daemon.BackgroundWorker("Dashboard[Visualizer]", func(ctx context.Context) {
 
-		onVisualizerVertexCreated := events.NewClosure(func(vertex *VisualizerVertex) {
+		onVisualizerVertexCreated := func(vertex *VisualizerVertex) {
 			if !d.nodeBridge.IsNodeAlmostSynced() {
 				return
 			}
@@ -343,9 +335,9 @@ func (d *Dashboard) runVisualizerFeed() {
 					Data: vertex,
 				},
 			)
-		})
+		}
 
-		onVisualizerVertexSolidUpdated := events.NewClosure(func(vertex *VisualizerVertex) {
+		onVisualizerVertexSolidUpdated := func(vertex *VisualizerVertex) {
 			if !d.nodeBridge.IsNodeAlmostSynced() {
 				return
 			}
@@ -361,9 +353,9 @@ func (d *Dashboard) runVisualizerFeed() {
 					},
 				},
 			)
-		})
+		}
 
-		onVisualizerVertexTipUpdated := events.NewClosure(func(vertex *VisualizerVertex) {
+		onVisualizerVertexTipUpdated := func(vertex *VisualizerVertex) {
 			if !d.nodeBridge.IsNodeAlmostSynced() {
 				return
 			}
@@ -380,9 +372,9 @@ func (d *Dashboard) runVisualizerFeed() {
 					},
 				},
 			)
-		})
+		}
 
-		onVisualizerConfirmation := events.NewClosure(func(milestoneParents []string, excludedIDs []string) {
+		onVisualizerConfirmation := func(milestoneParents []string, excludedIDs []string) {
 			if !d.nodeBridge.IsNodeAlmostSynced() {
 				return
 			}
@@ -399,30 +391,28 @@ func (d *Dashboard) runVisualizerFeed() {
 					},
 				},
 			)
-		})
+		}
 
-		onBlockSolid := events.NewClosure(func(metadata *inx.BlockMetadata) {
+		onBlockSolid := func(metadata *inx.BlockMetadata) {
 			d.visualizer.SetIsSolid(metadata.BlockId.Unwrap())
-		})
+		}
 
-		onConfirmedMilestoneChanged := events.NewClosure(d.visualizer.ApplyConfirmedMilestoneChanged)
+		onConfirmedMilestoneChanged := d.visualizer.ApplyConfirmedMilestoneChanged
 
-		d.visualizer.Events.VertexCreated.Hook(onVisualizerVertexCreated)
-		defer d.visualizer.Events.VertexCreated.Detach(onVisualizerVertexCreated)
-		d.visualizer.Events.VertexSolidUpdated.Hook(onVisualizerVertexSolidUpdated)
-		defer d.visualizer.Events.VertexSolidUpdated.Detach(onVisualizerVertexSolidUpdated)
-		d.visualizer.Events.VertexTipUpdated.Hook(onVisualizerVertexTipUpdated)
-		defer d.visualizer.Events.VertexTipUpdated.Detach(onVisualizerVertexTipUpdated)
-		d.visualizer.Events.Confirmation.Hook(onVisualizerConfirmation)
-		defer d.visualizer.Events.Confirmation.Detach(onVisualizerConfirmation)
-		d.tangleListener.Events.BlockSolid.Hook(onBlockSolid)
-		defer d.tangleListener.Events.BlockSolid.Detach(onBlockSolid)
-		d.nodeBridge.Events.ConfirmedMilestoneChanged.Hook(onConfirmedMilestoneChanged)
-		defer d.nodeBridge.Events.ConfirmedMilestoneChanged.Detach(onConfirmedMilestoneChanged)
+		// register events
+		unhook := lo.Batch(
+			d.visualizer.Events.VertexCreated.Hook(onVisualizerVertexCreated).Unhook,
+			d.visualizer.Events.VertexSolidUpdated.Hook(onVisualizerVertexSolidUpdated).Unhook,
+			d.visualizer.Events.VertexTipUpdated.Hook(onVisualizerVertexTipUpdated).Unhook,
+			d.visualizer.Events.Confirmation.Hook(onVisualizerConfirmation).Unhook,
+			d.tangleListener.Events.BlockSolid.Hook(onBlockSolid).Unhook,
+			d.nodeBridge.Events.ConfirmedMilestoneChanged.Hook(onConfirmedMilestoneChanged).Unhook,
+		)
 
 		d.visualizer.Run(ctx)
 
 		<-ctx.Done()
+		unhook()
 
 		d.LogInfo("Stopping Dashboard[Visualizer] ...")
 		d.LogInfo("Stopping Dashboard[Visualizer] ... done")

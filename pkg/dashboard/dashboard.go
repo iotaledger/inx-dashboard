@@ -12,13 +12,13 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/blake2b"
 
-	"github.com/iotaledger/hive.go/core/basicauth"
-	hivedaemon "github.com/iotaledger/hive.go/core/daemon"
-	"github.com/iotaledger/hive.go/core/generics/event"
-	"github.com/iotaledger/hive.go/core/generics/options"
-	"github.com/iotaledger/hive.go/core/logger"
-	"github.com/iotaledger/hive.go/core/subscriptionmanager"
-	"github.com/iotaledger/hive.go/core/websockethub"
+	hivedaemon "github.com/iotaledger/hive.go/app/daemon"
+	"github.com/iotaledger/hive.go/lo"
+	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/runtime/options"
+	"github.com/iotaledger/hive.go/web/basicauth"
+	"github.com/iotaledger/hive.go/web/subscriptionmanager"
+	"github.com/iotaledger/hive.go/web/websockethub"
 	"github.com/iotaledger/inx-app/pkg/httpserver"
 	"github.com/iotaledger/inx-app/pkg/nodebridge"
 	"github.com/iotaledger/inx-dashboard/pkg/daemon"
@@ -191,14 +191,6 @@ func New(
 		subscriptionManager: subscriptionmanager.New[websockethub.ClientID, WebSocketMsgType](),
 	}, opts)
 
-	// events
-	d.subscriptionManager.Events().TopicAdded.Hook(event.NewClosure(func(event *subscriptionmanager.TopicEvent[WebSocketMsgType]) {
-		d.checkVisualizerSubscriptions()
-	}))
-	d.subscriptionManager.Events().TopicRemoved.Hook(event.NewClosure(func(event *subscriptionmanager.TopicEvent[WebSocketMsgType]) {
-		d.checkVisualizerSubscriptions()
-	}))
-
 	return d
 }
 
@@ -278,6 +270,28 @@ func (d *Dashboard) Run() {
 	if err := d.daemon.BackgroundWorker("Dashboard", func(ctx context.Context) {
 		d.LogInfo("Starting Dashboard server ...")
 
+		// register websocket hub events
+		unhookWebsocketHubEvents := lo.Batch(
+			d.hub.Events().ClientConnected.Hook(func(event *websockethub.ClientConnectionEvent) {
+				d.LogDebugf("WebSocket client (ID: %d) connection established", event.ID)
+				d.subscriptionManager.Connect(event.ID)
+			}).Unhook,
+			d.hub.Events().ClientDisconnected.Hook(func(event *websockethub.ClientConnectionEvent) {
+				d.LogDebugf("WebSocket client (ID: %d) connection closed", event.ID)
+				d.subscriptionManager.Disconnect(event.ID)
+			}).Unhook,
+		)
+
+		// register subscription manager events
+		unhookSubscriptionManagerEvents := lo.Batch(
+			d.subscriptionManager.Events().TopicAdded.Hook(func(event *subscriptionmanager.TopicEvent[WebSocketMsgType]) {
+				d.checkVisualizerSubscriptions()
+			}).Unhook,
+			d.subscriptionManager.Events().TopicRemoved.Hook(func(event *subscriptionmanager.TopicEvent[WebSocketMsgType]) {
+				d.checkVisualizerSubscriptions()
+			}).Unhook,
+		)
+
 		e.Server.BaseContext = func(l net.Listener) context.Context {
 			// set BaseContext to be the same as the worker,
 			// so that requests being processed don't hang the shutdown procedure
@@ -294,6 +308,9 @@ func (d *Dashboard) Run() {
 		d.LogInfo("Starting Dashboard server ... done")
 		<-ctx.Done()
 		d.LogInfo("Stopping Dashboard server ...")
+
+		unhookWebsocketHubEvents()
+		unhookSubscriptionManagerEvents()
 
 		shutdownCtx, shutdownCtxCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer shutdownCtxCancel()

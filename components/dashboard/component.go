@@ -6,8 +6,8 @@ import (
 	"go.uber.org/dig"
 	"nhooyr.io/websocket"
 
-	"github.com/iotaledger/hive.go/core/app"
-	"github.com/iotaledger/hive.go/core/websockethub"
+	"github.com/iotaledger/hive.go/app"
+	"github.com/iotaledger/hive.go/web/websockethub"
 	"github.com/iotaledger/inx-app/pkg/nodebridge"
 	"github.com/iotaledger/inx-dashboard/pkg/dashboard"
 )
@@ -20,21 +20,19 @@ const (
 )
 
 func init() {
-	CoreComponent = &app.CoreComponent{
-		Component: &app.Component{
-			Name:      "Dashboard",
-			DepsFunc:  func(cDeps dependencies) { deps = cDeps },
-			Params:    params,
-			Provide:   provide,
-			Configure: configure,
-			Run:       run,
-		},
+	Component = &app.Component{
+		Name:      "Dashboard",
+		DepsFunc:  func(cDeps dependencies) { deps = cDeps },
+		Params:    params,
+		Provide:   provide,
+		Configure: configure,
+		Run:       run,
 	}
 }
 
 var (
-	CoreComponent *app.CoreComponent
-	deps          dependencies
+	Component *app.Component
+	deps      dependencies
 )
 
 type dependencies struct {
@@ -53,10 +51,10 @@ func provide(c *dig.Container) error {
 
 		username := ParamsDashboard.Auth.Username
 		if len(username) == 0 {
-			CoreComponent.LogErrorfAndExit("%s cannot be empty", CoreComponent.App().Config().GetParameterPath(&(ParamsDashboard.Auth.Username)))
+			Component.LogErrorfAndExit("%s cannot be empty", Component.App().Config().GetParameterPath(&(ParamsDashboard.Auth.Username)))
 		}
 		if len(username) > maxDashboardAuthUsernameSize {
-			CoreComponent.LogErrorfAndExit("%s has a max length of %d", CoreComponent.App().Config().GetParameterPath(&(ParamsDashboard.Auth.Username)), maxDashboardAuthUsernameSize)
+			Component.LogErrorfAndExit("%s has a max length of %d", Component.App().Config().GetParameterPath(&(ParamsDashboard.Auth.Username)), maxDashboardAuthUsernameSize)
 		}
 
 		acceptOptions := &websocket.AcceptOptions{
@@ -66,13 +64,13 @@ func provide(c *dig.Container) error {
 			CompressionMode: websocket.CompressionDisabled,
 		}
 
-		hub := websockethub.NewHub(CoreComponent.Logger(), acceptOptions, broadcastQueueSize, clientSendChannelSize, maxWebsocketMessageSize)
+		hub := websockethub.NewHub(Component.Logger(), acceptOptions, broadcastQueueSize, clientSendChannelSize, maxWebsocketMessageSize)
 
-		CoreComponent.LogInfo("Setting up dashboard ...")
+		Component.LogInfo("Setting up dashboard ...")
 
 		return dashboard.New(
-			CoreComponent.Logger(),
-			CoreComponent.Daemon(),
+			Component.Logger(),
+			Component.Daemon(),
 			deps.NodeBridge,
 			hub,
 			dashboard.WithBindAddress(ParamsDashboard.BindAddress),
