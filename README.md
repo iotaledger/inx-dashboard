@@ -3,10 +3,10 @@ A node dashboard that uses INX
 
 ## Building inx-dashboard
 
-Clone
+Clone the repository with submodules
 
 ```bash 
-git clone https://github.com/iotaledger/inx-dashboard.git
+git clone --recurse-submodules https://github.com/iotaledger/inx-dashboard.git
 ```
 
 Go to the root directory of the repo and call
@@ -14,37 +14,13 @@ Go to the root directory of the repo and call
 ./scripts/build.sh
 ```
 
-**Or** if that doesn't work because of missing dependencies etc do following steps:
-
-1. ```bash 
-    git clone https://github.com/iotaledger/inx-dashboard.git
-   ```
-2. ```bash
-    cd inx-dashboard
-   ```
-3. ```bash
-   git submodule update --init --recursive
-   ```
-4. ```bash
-   cd node-dashboard
-   ```
-5. ```bash
-   npm install && npm run build
-   ```
-6. ```bash
-   cd ..
-   ```
-7. ```bash
-   ./build.sh && go build
-   ```
-
 ## Setting password for login
 
-To generate a password hash, and it's salt you need to clone and build <a href=https://github.com/iotaledger/hornet>Hornet</a>
+To generate a password hash, and it's salt you need to use the <a href=https://github.com/iotaledger/hornet>Hornet</a> docker image.
 
-After building use hornet tools to generate the password hash:
+After installing docker use the hornet tools to generate the password hash:
 ```bash
-./hornet tools pwd-hash
+docker run -it iotaledger/hornet:2.0-rc tools pwd-hash
 ```
 
 You can set the hash and the salt with these parameters:
