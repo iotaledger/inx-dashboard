@@ -18,7 +18,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.16.0
 	go.uber.org/atomic v1.11.0
-	go.uber.org/dig v1.17.0
+	go.uber.org/dig v1.17.1
 	golang.org/x/crypto v0.12.0
 	golang.org/x/time v0.3.0
 	nhooyr.io/websocket v1.8.7
